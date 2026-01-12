@@ -1,0 +1,613 @@
+{
+  "version": "1.0",
+  "metadata": {
+    "prdPath": "PRD.md",
+    "lastParsed": "2026-01-10T00:00:00.000Z",
+    "projectName": "nightreign-query"
+  },
+  "tasks": [
+    {
+      "id": "TASK-001",
+      "title": "Initialize Turborepo monorepo",
+      "description": "Create the root project structure with Turborepo 2.7, pnpm workspaces, and base configuration files (package.json, turbo.json, pnpm-workspace.yaml)",
+      "prdReference": "Phase 1 - Initialize Turborepo monorepo",
+      "status": "completed",
+      "priority": "high",
+      "complexity": "simple",
+      "dependencies": [],
+      "agent": "general",
+      "acceptanceCriteria": [
+        "Root package.json exists with pnpm workspaces configured",
+        "turbo.json exists with basic task pipeline",
+        "pnpm-workspace.yaml references apps/* and packages/*",
+        "pnpm install runs without errors"
+      ],
+      "createdAt": "2026-01-10T00:00:00.000Z",
+      "updatedAt": "2026-01-10T00:00:00.000Z"
+    },
+    {
+      "id": "TASK-002",
+      "title": "Set up apps/web Next.js 16 app",
+      "description": "Create the Next.js 16 web application with App Router, TypeScript, and base layout/page structure",
+      "prdReference": "Phase 1 - Set up apps/web (Next.js 16)",
+      "status": "completed",
+      "priority": "high",
+      "complexity": "simple",
+      "dependencies": ["TASK-001"],
+      "agent": "nextjs-expert",
+      "acceptanceCriteria": [
+        "apps/web directory exists with Next.js 16.1+ installed",
+        "App Router structure (app/ directory) is set up",
+        "Base layout.tsx and page.tsx exist",
+        "pnpm dev --filter web starts without errors",
+        "http://localhost:3000 renders placeholder content"
+      ],
+      "createdAt": "2026-01-10T00:00:00.000Z",
+      "updatedAt": "2026-01-10T00:00:00.000Z"
+    },
+    {
+      "id": "TASK-003",
+      "title": "Set up apps/scraper Node.js app",
+      "description": "Create the Node.js scraper application with tsx for TypeScript execution, base CLI entry point, and folder structure",
+      "prdReference": "Phase 1 - Set up apps/scraper (Node.js)",
+      "status": "completed",
+      "priority": "high",
+      "complexity": "simple",
+      "dependencies": ["TASK-001"],
+      "agent": "general",
+      "acceptanceCriteria": [
+        "apps/scraper directory exists with package.json",
+        "tsx installed as dev dependency for TypeScript execution",
+        "src/index.ts exists as CLI entry point",
+        "Folder structure matches implementation plan (scraper/, normalizer/, embeddings/, storage/)",
+        "pnpm --filter scraper run start executes without errors"
+      ],
+      "createdAt": "2026-01-10T00:00:00.000Z",
+      "updatedAt": "2026-01-10T00:00:00.000Z"
+    },
+    {
+      "id": "TASK-004",
+      "title": "Set up packages/database with Prisma + SQLite",
+      "description": "Create the database package with Prisma ORM, SQLite configuration, schema with all entity models (Boss, Weapon, Relic, Nightfarer, Skill, ContentChunk)",
+      "prdReference": "Phase 1 - Set up packages/database (Prisma + SQLite)",
+      "status": "completed",
+      "priority": "high",
+      "complexity": "medium",
+      "dependencies": ["TASK-001"],
+      "agent": "general",
+      "acceptanceCriteria": [
+        "packages/database directory exists with package.json",
+        "Prisma is installed and configured for SQLite",
+        "schema.prisma contains all 6 models (Boss, Weapon, Relic, Nightfarer, Skill, ContentChunk)",
+        "Each model has embedding field as Bytes type",
+        "pnpm db:generate creates Prisma client successfully",
+        "pnpm db:migrate applies schema to dev.db"
+      ],
+      "createdAt": "2026-01-10T00:00:00.000Z",
+      "updatedAt": "2026-01-10T00:00:00.000Z"
+    },
+    {
+      "id": "TASK-005",
+      "title": "Set up packages/types with shared TypeScript types",
+      "description": "Create the types package with shared TypeScript interfaces for SearchQuery, SearchResult, ContentType, and NormalizedContent",
+      "prdReference": "Phase 1 - Set up packages/types",
+      "status": "completed",
+      "priority": "high",
+      "complexity": "simple",
+      "dependencies": ["TASK-001"],
+      "agent": "typescript-expert",
+      "acceptanceCriteria": [
+        "packages/types directory exists with package.json",
+        "index.ts exports all shared types",
+        "SearchQuery interface defined with query, filters, limit fields",
+        "SearchResult interface defined with chunks and formatted fields",
+        "ContentType union type includes all 7 content types",
+        "NormalizedContent interface defined per implementation plan",
+        "Types are importable from @nightreign/types in other packages"
+      ],
+      "createdAt": "2026-01-10T00:00:00.000Z",
+      "updatedAt": "2026-01-10T00:00:00.000Z"
+    },
+    {
+      "id": "TASK-006",
+      "title": "Configure Biome linting",
+      "description": "Set up Biome as the linter/formatter replacing ESLint and Prettier, configure rules for TypeScript and React",
+      "prdReference": "Phase 1 - Configure Biome linting",
+      "status": "completed",
+      "priority": "medium",
+      "complexity": "simple",
+      "dependencies": ["TASK-001"],
+      "agent": "general",
+      "acceptanceCriteria": [
+        "biome.json exists at root with project configuration",
+        "Biome installed as dev dependency",
+        "lint script runs pnpm biome check .",
+        "format script runs pnpm biome format --write .",
+        "pnpm lint passes without errors on initial codebase"
+      ],
+      "createdAt": "2026-01-10T00:00:00.000Z",
+      "updatedAt": "2026-01-10T00:00:00.000Z"
+    },
+    {
+      "id": "TASK-007",
+      "title": "Configure turbo.json task pipeline",
+      "description": "Set up Turborepo task configuration with proper dependencies for build, dev, lint, db:generate, db:migrate, and scrape tasks",
+      "prdReference": "Phase 1 - Configure turbo.json tasks",
+      "status": "completed",
+      "priority": "medium",
+      "complexity": "simple",
+      "dependencies": [
+        "TASK-002",
+        "TASK-003",
+        "TASK-004",
+        "TASK-005",
+        "TASK-006"
+      ],
+      "agent": "general",
+      "acceptanceCriteria": [
+        "turbo.json contains all required tasks from implementation plan",
+        "Task dependencies are correctly configured (e.g., build depends on db:generate)",
+        "pnpm turbo run build runs all packages in correct order",
+        "pnpm turbo run dev starts both apps",
+        "Cache configuration is set up for builds"
+      ],
+      "createdAt": "2026-01-10T00:00:00.000Z",
+      "updatedAt": "2026-01-10T00:00:00.000Z"
+    },
+    {
+      "id": "TASK-008",
+      "title": "Implement Playwright scraper for Fextralife",
+      "description": "Create Playwright-based scraper that can navigate Fextralife wiki pages, handle JavaScript rendering, and extract raw HTML",
+      "prdReference": "Phase 2 - Implement Playwright scraper for Fextralife",
+      "status": "completed",
+      "priority": "high",
+      "complexity": "medium",
+      "dependencies": ["TASK-003"],
+      "agent": "general",
+      "acceptanceCriteria": [
+        "Playwright installed in apps/scraper",
+        "scraper/fextralife.ts module exports scraping functions",
+        "Can scrape category pages (/Bosses, /Weapons, /Relics, etc.)",
+        "Can scrape individual item pages",
+        "Implements rate limiting (2 req/sec, 5 concurrent max)",
+        "Caches raw HTML locally for re-processing",
+        "Handles common errors (timeouts, 404s) gracefully"
+      ],
+      "createdAt": "2026-01-10T00:00:00.000Z",
+      "updatedAt": "2026-01-10T00:00:00.000Z"
+    },
+    {
+      "id": "TASK-009",
+      "title": "Implement Cheerio parsers for page types",
+      "description": "Create Cheerio-based HTML parsers that extract structured data from each page type (bosses, weapons, relics, skills, nightfarers)",
+      "prdReference": "Phase 2 - Implement Cheerio parsers for each page type",
+      "status": "completed",
+      "priority": "high",
+      "complexity": "medium",
+      "dependencies": ["TASK-008"],
+      "agent": "general",
+      "acceptanceCriteria": [
+        "Cheerio installed in apps/scraper",
+        "scraper/parser.ts exports parsers for each content type",
+        "Boss parser extracts: name, category, weaknesses, phases, strategies, rewards",
+        "Weapon parser extracts: name, type, stats, scaling, skill",
+        "Relic parser extracts: name, color, tier, effects",
+        "Nightfarer parser extracts: name, stats, passive, skill, ultimate, vessel",
+        "Skill parser extracts: name, fpCost, weaponTypes, effect",
+        "All parsers handle missing/malformed data gracefully"
+      ],
+      "createdAt": "2026-01-10T00:00:00.000Z",
+      "updatedAt": "2026-01-10T00:00:00.000Z"
+    },
+    {
+      "id": "TASK-010",
+      "title": "Implement Claude normalization with Zod schemas",
+      "description": "Create Claude API integration for normalizing scraped content into structured data using Zod schemas for type-safe outputs",
+      "prdReference": "Phase 2 - Implement Claude normalization with Zod schemas",
+      "status": "completed",
+      "priority": "high",
+      "complexity": "medium",
+      "dependencies": ["TASK-009", "TASK-005"],
+      "agent": "general",
+      "acceptanceCriteria": [
+        "@anthropic-ai/sdk installed in apps/scraper",
+        "Zod installed and schemas defined for each content type",
+        "normalizer/claude.ts implements Claude Haiku 4.5 API calls",
+        "normalizer/schemas.ts contains Zod schemas matching Prisma models",
+        "Batch processing implemented for efficiency",
+        "Handles API errors and rate limits gracefully",
+        "Outputs match NormalizedContent interface from packages/types"
+      ],
+      "createdAt": "2026-01-10T00:00:00.000Z",
+      "updatedAt": "2026-01-10T00:00:00.000Z"
+    },
+    {
+      "id": "TASK-011",
+      "title": "Implement embedding generation with bge-small-en-v1.5",
+      "description": "Create embedding generation module using bge-small-en-v1.5 model for 384-dimension vectors",
+      "prdReference": "Phase 2 - Implement embedding generation (bge-small-en-v1.5)",
+      "status": "completed",
+      "priority": "high",
+      "complexity": "medium",
+      "dependencies": ["TASK-010"],
+      "agent": "general",
+      "acceptanceCriteria": [
+        "@xenova/transformers or equivalent library installed",
+        "embeddings/generator.ts exports embedding generation function",
+        "Generates 384-dimensional float32 vectors",
+        "Can batch process multiple texts for efficiency",
+        "Model is cached locally after first download",
+        "Outputs compatible with Bytes storage in Prisma"
+      ],
+      "createdAt": "2026-01-10T00:00:00.000Z",
+      "updatedAt": "2026-01-10T00:00:00.000Z"
+    },
+    {
+      "id": "TASK-012",
+      "title": "Store data in SQLite and build Orama index",
+      "description": "Create storage module that saves normalized data to SQLite via Prisma and builds/persists Orama search index",
+      "prdReference": "Phase 2 - Store data in SQLite + build Orama index",
+      "status": "completed",
+      "priority": "high",
+      "complexity": "medium",
+      "dependencies": ["TASK-004", "TASK-011"],
+      "agent": "general",
+      "acceptanceCriteria": [
+        "@orama/orama installed in packages/database",
+        "storage/index.ts exports save functions for each entity type",
+        "Data saved to SQLite via Prisma client",
+        "Orama index built with schema matching ContentChunk",
+        "Orama index persisted to data/orama-index.json",
+        "ContentChunk records created for hybrid search",
+        "Can rebuild index from SQLite data"
+      ],
+      "createdAt": "2026-01-10T00:00:00.000Z",
+      "updatedAt": "2026-01-10T00:00:00.000Z"
+    },
+    {
+      "id": "TASK-013",
+      "title": "Implement Orama hybrid search",
+      "description": "Create hybrid search service combining Orama vector search with full-text search for optimal results",
+      "prdReference": "Phase 3 - Implement Orama hybrid search",
+      "status": "completed",
+      "priority": "high",
+      "complexity": "medium",
+      "dependencies": ["TASK-012"],
+      "agent": "general",
+      "acceptanceCriteria": [
+        "search/orama.ts exports search functions",
+        "search/hybrid.ts combines vector and full-text results",
+        "Supports filtering by content type",
+        "Returns ranked results with relevance scores",
+        "Search completes in <100ms for typical queries",
+        "Handles edge cases (empty query, no results)"
+      ],
+      "createdAt": "2026-01-10T00:00:00.000Z",
+      "updatedAt": "2026-01-10T00:00:00.000Z"
+    },
+    {
+      "id": "TASK-014",
+      "title": "Implement query embedding generation",
+      "description": "Create embedding generation for user queries using the same bge-small-en-v1.5 model as content embeddings",
+      "prdReference": "Phase 3 - Implement embedding generation for queries",
+      "status": "completed",
+      "priority": "high",
+      "complexity": "simple",
+      "dependencies": ["TASK-011", "TASK-013"],
+      "agent": "general",
+      "acceptanceCriteria": [
+        "search/embeddings.ts exports query embedding function",
+        "Uses same model as content embeddings (bge-small-en-v1.5)",
+        "Model initialized once and cached for performance",
+        "Embedding generation completes in <100ms",
+        "Compatible with Orama vector search"
+      ],
+      "createdAt": "2026-01-10T00:00:00.000Z",
+      "updatedAt": "2026-01-10T00:00:00.000Z"
+    },
+    {
+      "id": "TASK-015",
+      "title": "Implement search API endpoint",
+      "description": "Create Next.js API route for search that accepts queries and returns results with optional LLM formatting",
+      "prdReference": "Phase 3 - Implement search API endpoint",
+      "status": "completed",
+      "priority": "high",
+      "complexity": "medium",
+      "dependencies": ["TASK-002", "TASK-013", "TASK-014"],
+      "agent": "nextjs-expert",
+      "acceptanceCriteria": [
+        "POST /api/search route exists in apps/web",
+        "Accepts SearchQuery interface as request body",
+        "Calls search service from packages/database",
+        "Returns SearchResult for format: false",
+        "Returns event stream for format: true",
+        "Handles validation errors with proper HTTP status codes",
+        "Includes timing data in response"
+      ],
+      "createdAt": "2026-01-10T00:00:00.000Z",
+      "updatedAt": "2026-01-10T00:00:00.000Z"
+    },
+    {
+      "id": "TASK-016",
+      "title": "Add timing instrumentation",
+      "description": "Add performance timing to search pipeline to measure embedding, search, and total latency",
+      "prdReference": "Phase 3 - Add timing instrumentation",
+      "status": "completed",
+      "priority": "medium",
+      "complexity": "simple",
+      "dependencies": ["TASK-015"],
+      "agent": "general",
+      "acceptanceCriteria": [
+        "Timing interface defined with embedding, search, format, total fields",
+        "Each pipeline stage records its duration",
+        "Timing data included in API response",
+        "Logging outputs timing for debugging",
+        "p50 and p95 latency can be calculated from logs"
+      ],
+      "createdAt": "2026-01-10T00:00:00.000Z",
+      "updatedAt": "2026-01-10T00:00:00.000Z"
+    },
+    {
+      "id": "TASK-017",
+      "title": "Build SearchBar component",
+      "description": "Create client component for search input with debounced search, type filtering, and format toggle",
+      "prdReference": "Phase 4 - Build search UI with SearchBar component",
+      "status": "completed",
+      "priority": "high",
+      "complexity": "medium",
+      "dependencies": ["TASK-015"],
+      "agent": "nextjs-expert",
+      "acceptanceCriteria": [
+        "SearchBar is a client component with 'use client'",
+        "Input accepts natural language queries up to 500 chars",
+        "Search is debounced (300ms delay)",
+        "Optional type filter dropdown (boss, weapon, relic, etc.)",
+        "Format toggle switch (formatted vs raw)",
+        "Submits to /api/search on enter or button click",
+        "Shows loading state during search"
+      ],
+      "createdAt": "2026-01-10T00:00:00.000Z",
+      "updatedAt": "2026-01-10T00:00:00.000Z"
+    },
+    {
+      "id": "TASK-018",
+      "title": "Build Results component with streaming",
+      "description": "Create server component that displays search results with streaming support for LLM-formatted responses",
+      "prdReference": "Phase 4 - Build Results component with streaming",
+      "status": "completed",
+      "priority": "high",
+      "complexity": "medium",
+      "dependencies": ["TASK-017"],
+      "agent": "nextjs-expert",
+      "acceptanceCriteria": [
+        "Results component renders search results",
+        "Supports streaming response display for formatted results",
+        "Shows raw result cards for unformatted mode",
+        "ResultCard component displays individual results with type, name, content",
+        "Markdown rendering for formatted responses",
+        "Empty state when no results found",
+        "Error state with retry option"
+      ],
+      "createdAt": "2026-01-10T00:00:00.000Z",
+      "updatedAt": "2026-01-10T00:00:00.000Z"
+    },
+    {
+      "id": "TASK-019",
+      "title": "Add keyboard shortcuts",
+      "description": "Implement keyboard navigation with / to focus search and Esc to clear",
+      "prdReference": "Phase 4 - Add keyboard shortcuts",
+      "status": "completed",
+      "priority": "medium",
+      "complexity": "simple",
+      "dependencies": ["TASK-017"],
+      "agent": "nextjs-expert",
+      "acceptanceCriteria": [
+        "Pressing / focuses the search input from anywhere",
+        "Pressing Esc clears the search input",
+        "Esc also closes any open dropdowns/modals",
+        "Keyboard shortcuts work without interfering with text input",
+        "Visual hint shows keyboard shortcut (e.g., / icon in search bar)"
+      ],
+      "createdAt": "2026-01-10T00:00:00.000Z",
+      "updatedAt": "2026-01-10T00:00:00.000Z"
+    },
+    {
+      "id": "TASK-020",
+      "title": "Style with dark theme",
+      "description": "Apply dark theme styling suitable for gaming sessions with proper contrast and readability",
+      "prdReference": "Phase 4 - Style with dark theme",
+      "status": "completed",
+      "priority": "low",
+      "complexity": "simple",
+      "dependencies": ["TASK-018"],
+      "agent": "nextjs-expert",
+      "acceptanceCriteria": [
+        "Dark background with light text (gaming aesthetic)",
+        "Proper contrast ratios for accessibility",
+        "Consistent color scheme throughout app",
+        "Responsive design works on different window sizes",
+        "No light flash on page load",
+        "Optional: subtle Elden Ring-inspired accent colors"
+      ],
+      "createdAt": "2026-01-10T00:00:00.000Z",
+      "updatedAt": "2026-01-10T00:00:00.000Z"
+    },
+    {
+      "id": "TASK-021",
+      "title": "Integrate Groq API",
+      "description": "Set up Groq SDK for fast LLM inference with llama-3.1-8b-instant model",
+      "prdReference": "Phase 5 - Integrate Groq API",
+      "status": "completed",
+      "priority": "high",
+      "complexity": "simple",
+      "dependencies": ["TASK-002"],
+      "agent": "general",
+      "acceptanceCriteria": [
+        "groq-sdk installed in apps/web",
+        "lib/groq.ts exports Groq client",
+        "GROQ_API_KEY configured in .env.local",
+        "Can make basic completion request to llama-3.1-8b-instant",
+        "Streaming responses work correctly"
+      ],
+      "createdAt": "2026-01-10T00:00:00.000Z",
+      "updatedAt": "2026-01-10T00:00:00.000Z"
+    },
+    {
+      "id": "TASK-022",
+      "title": "Implement format templates by query type",
+      "description": "Create prompt templates for different query types (boss, weapon, general) that produce concise, formatted responses",
+      "prdReference": "Phase 5 - Implement format templates by query type",
+      "status": "completed",
+      "priority": "high",
+      "complexity": "medium",
+      "dependencies": ["TASK-021"],
+      "agent": "general",
+      "acceptanceCriteria": [
+        "Format templates defined for boss, weapon, relic, general queries",
+        "Templates produce numbered steps for boss strategies",
+        "Templates produce markdown tables for weapon stats",
+        "Templates produce bullet points for lists",
+        "Query type detection based on search results",
+        "Responses limited to ~100 tokens for speed",
+        "Templates include system prompt for Elden Ring context"
+      ],
+      "createdAt": "2026-01-10T00:00:00.000Z",
+      "updatedAt": "2026-01-10T00:00:00.000Z"
+    },
+    {
+      "id": "TASK-023",
+      "title": "Add streaming response support",
+      "description": "Implement server-sent events streaming for LLM-formatted responses in the search API",
+      "prdReference": "Phase 5 - Add streaming response support",
+      "status": "completed",
+      "priority": "high",
+      "complexity": "medium",
+      "dependencies": ["TASK-022", "TASK-015"],
+      "agent": "nextjs-expert",
+      "acceptanceCriteria": [
+        "Search API returns text/event-stream when format: true",
+        "Groq streaming response piped to client",
+        "Client displays tokens as they arrive",
+        "Time to first byte < 200ms",
+        "Stream properly closes on completion",
+        "Error handling for stream interruptions"
+      ],
+      "createdAt": "2026-01-10T00:00:00.000Z",
+      "updatedAt": "2026-01-10T00:00:00.000Z"
+    },
+    {
+      "id": "TASK-024",
+      "title": "Add format toggle in UI",
+      "description": "Add UI toggle to switch between formatted (LLM) and raw (direct) search results",
+      "prdReference": "Phase 5 - Add format toggle in UI",
+      "status": "completed",
+      "priority": "medium",
+      "complexity": "simple",
+      "dependencies": ["TASK-023", "TASK-018"],
+      "agent": "nextjs-expert",
+      "acceptanceCriteria": [
+        "Toggle switch or button in SearchBar component",
+        "Default state is formatted (LLM) mode",
+        "Switching updates the format parameter in search request",
+        "Results component adapts display based on mode",
+        "User preference persisted (localStorage)",
+        "Visual indication of current mode"
+      ],
+      "createdAt": "2026-01-10T00:00:00.000Z",
+      "updatedAt": "2026-01-10T00:00:00.000Z"
+    },
+    {
+      "id": "TASK-025",
+      "title": "Run full content scrape",
+      "description": "Execute complete scrape of all Fextralife Nightreign content (bosses, weapons, relics, skills, nightfarers, talismans)",
+      "prdReference": "Phase 6 - Scrape all content (full run)",
+      "status": "pending",
+      "priority": "high",
+      "complexity": "simple",
+      "dependencies": [
+        "TASK-008",
+        "TASK-009",
+        "TASK-010",
+        "TASK-011",
+        "TASK-012"
+      ],
+      "agent": "general",
+      "acceptanceCriteria": [
+        "All ~500 pages scraped from Fextralife wiki",
+        "All content normalized via Claude Haiku",
+        "All embeddings generated and stored",
+        "SQLite database populated with all entities",
+        "Orama index built and persisted",
+        "Data coverage matches PRD estimates (~50 bosses, ~200 weapons, etc.)",
+        "No critical errors during scrape"
+      ],
+      "createdAt": "2026-01-10T00:00:00.000Z",
+      "updatedAt": "2026-01-10T00:00:00.000Z"
+    },
+    {
+      "id": "TASK-026",
+      "title": "Manual testing and bug fixes",
+      "description": "Perform end-to-end testing of search functionality with example queries and fix any discovered issues",
+      "prdReference": "Phase 6 - Manual testing and bug fixes",
+      "status": "pending",
+      "priority": "high",
+      "complexity": "medium",
+      "dependencies": ["TASK-025", "TASK-023"],
+      "agent": "general",
+      "acceptanceCriteria": [
+        "Test all example queries from PRD (Maris phase 2, Black Knife stats, etc.)",
+        "Verify results are accurate against wiki sources",
+        "Test edge cases (empty query, special characters, long queries)",
+        "Test keyboard shortcuts functionality",
+        "Test streaming display works smoothly",
+        "All discovered bugs documented and fixed",
+        "UI works on different screen sizes"
+      ],
+      "createdAt": "2026-01-10T00:00:00.000Z",
+      "updatedAt": "2026-01-10T00:00:00.000Z"
+    },
+    {
+      "id": "TASK-027",
+      "title": "Performance optimization",
+      "description": "Profile and optimize search latency to meet p95 < 1000ms and p50 < 500ms targets",
+      "prdReference": "Phase 6 - Performance optimization if needed",
+      "status": "pending",
+      "priority": "medium",
+      "complexity": "medium",
+      "dependencies": ["TASK-026"],
+      "agent": "general",
+      "acceptanceCriteria": [
+        "Measure current p50 and p95 latency",
+        "Identify bottlenecks in search pipeline",
+        "Optimize embedding generation if needed (caching)",
+        "Optimize Orama queries if needed",
+        "p50 latency < 500ms achieved",
+        "p95 latency < 1000ms achieved",
+        "Time to first byte < 200ms for streaming"
+      ],
+      "createdAt": "2026-01-10T00:00:00.000Z",
+      "updatedAt": "2026-01-10T00:00:00.000Z"
+    },
+    {
+      "id": "TASK-028",
+      "title": "Documentation",
+      "description": "Update README and add setup instructions for running the project locally",
+      "prdReference": "Phase 6 - Documentation",
+      "status": "pending",
+      "priority": "low",
+      "complexity": "simple",
+      "dependencies": ["TASK-027"],
+      "agent": "general",
+      "acceptanceCriteria": [
+        "README.md has project overview",
+        "Quick start instructions for local setup",
+        "Environment variables documented",
+        "Available scripts documented (dev, build, scrape, etc.)",
+        "Data refresh workflow documented",
+        "Known limitations noted"
+      ],
+      "createdAt": "2026-01-10T00:00:00.000Z",
+      "updatedAt": "2026-01-10T00:00:00.000Z"
+    }
+  ]
+}

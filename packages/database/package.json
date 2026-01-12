@@ -1,0 +1,29 @@
+{
+  "name": "@nightreign/database",
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev --skip-generate",
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "^3.8.1",
+    "@nightreign/types": "workspace:*",
+    "@orama/orama": "^3.1.18",
+    "@orama/plugin-data-persistence": "^3.1.18",
+    "@prisma/client": "^6.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.0",
+    "prisma": "^6.6.0",
+    "typescript": "^5.7.2"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./client": "./src/client.ts",
+    "./search": "./src/search/index.ts",
+    "./storage": "./src/storage/index.ts"
+  }
+}

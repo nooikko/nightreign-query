@@ -1,0 +1,87 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Dark gaming theme - inspired by Elden Ring's muted gold and night aesthetic */
+    --background: 220 20% 6%;
+    --foreground: 60 10% 92%;
+
+    /* Card uses slightly elevated background */
+    --card: 220 20% 9%;
+    --card-foreground: 60 10% 92%;
+
+    /* Popover similar to card */
+    --popover: 220 20% 9%;
+    --popover-foreground: 60 10% 92%;
+
+    /* Primary: Warm gold accent (Elden Ring inspired) */
+    --primary: 45 70% 55%;
+    --primary-foreground: 220 20% 6%;
+
+    /* Secondary: Muted steel blue */
+    --secondary: 220 15% 18%;
+    --secondary-foreground: 60 10% 92%;
+
+    /* Muted: For subdued elements */
+    --muted: 220 15% 15%;
+    --muted-foreground: 220 10% 55%;
+
+    /* Accent: Subtle highlight */
+    --accent: 220 15% 18%;
+    --accent-foreground: 60 10% 92%;
+
+    /* Destructive: Blood red */
+    --destructive: 0 65% 45%;
+    --destructive-foreground: 60 10% 92%;
+
+    /* Borders and inputs */
+    --border: 220 15% 20%;
+    --input: 220 15% 15%;
+
+    /* Focus ring: Gold accent */
+    --ring: 45 70% 55%;
+
+    /* Border radius */
+    --radius: 0.5rem;
+
+    /* Chart colors */
+    --chart-1: 45 70% 55%;
+    --chart-2: 180 55% 45%;
+    --chart-3: 25 80% 55%;
+    --chart-4: 270 60% 55%;
+    --chart-5: 340 70% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* Custom scrollbar for dark theme */
+@layer utilities {
+  .scrollbar-dark::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .scrollbar-dark::-webkit-scrollbar-track {
+    @apply bg-gray-900;
+  }
+
+  .scrollbar-dark::-webkit-scrollbar-thumb {
+    @apply bg-gray-700 rounded;
+  }
+
+  .scrollbar-dark::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-600;
+  }
+}

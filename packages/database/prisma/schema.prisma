@@ -1,0 +1,201 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Boss {
+  id                    String  @id @default(cuid())
+  name                  String  @unique
+  category              String
+  location              String
+  weaknesses            Json    // string[]
+  phases                Json    // BossPhase[]
+  strategies            String
+  rewards               String
+  hpByPlayerCount       Json?   // {solo?, duo?, trio?}
+  stance                Int?
+  parryInfo             Json?   // {canParry, parriesRequired?, notes?}
+  damageNegation        Json?   // {phase1?, phase2?}
+  statusResistances     Json?   // {poison?, scarletRot?, bloodLoss?, frostbite?, sleep?, madness?}
+  strongerVs            Json?   // string[] - damage types boss is resistant to
+  damageTypesDealt      Json?   // string[]
+  statusEffectsInflicted Json?  // string[]
+  tags                  Json?   // string[]
+  embedding             Bytes?
+}
+
+model Weapon {
+  id              String  @id @default(cuid())
+  name            String  @unique
+  type            String
+  stats           Json
+  statusBuildup   Json?   // WeaponStatusBuildup - bleed, frost, poison, etc.
+  scaling         Json
+  skill           String
+  description     String
+  passiveBenefits Json?   // string[] - passive effects
+  uniqueEffect    String? // Special weapon effect
+  tags            Json?   // string[] - for filtering
+  embedding       Bytes?
+}
+
+model Relic {
+  id        String  @id @default(cuid())
+  name      String  @unique
+  color     String
+  tier      String
+  effects   Json    // Array of effect strings stored as JSON
+  tags      Json?   // string[]
+  embedding Bytes?
+}
+
+model Nightfarer {
+  id        String  @id @default(cuid())
+  name      String  @unique
+  stats     Json
+  passive   String?
+  skill     String?
+  ultimate  String?
+  vessel    String?
+  tags      Json?   // string[]
+  embedding Bytes?
+}
+
+model Skill {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  fpCost      Int
+  weaponTypes Json    // Array of weapon type strings stored as JSON
+  effect      String
+  tags        Json?   // string[]
+  embedding   Bytes?
+}
+
+model Location {
+  id                String  @id @default(cuid())
+  name              String  @unique
+  region            String
+  description       String
+  elementalAffinity String? // ElementalAffinity enum value (cold, fire, etc.)
+  notableItems      Json    // string[]
+  enemies           Json    // string[]
+  bosses            Json    // string[]
+  connections       Json    // string[]
+  crystalTypes      Json?   // string[] - crystal types for loot tables
+  favor             String? // Special location reward
+  tags              Json    // string[]
+  embedding         Bytes?
+}
+
+model Talisman {
+  id        String  @id @default(cuid())
+  name      String  @unique
+  effect    String
+  weight    Float?
+  location  String
+  tags      Json    // string[]
+  embedding Bytes?
+}
+
+model Spell {
+  id           String  @id @default(cuid())
+  name         String  @unique
+  spellType    String  // Sorcery or Incantation
+  fpCost       Int
+  slots        Int
+  effect       String
+  requirements String
+  location     String
+  tags         Json    // string[]
+  embedding    Bytes?
+}
+
+model Armor {
+  id              String  @id @default(cuid())
+  name            String  @unique
+  slot            String  // Head, Chest, Arms, Legs
+  weight          Float?
+  poise           Int?
+  damageNegation  String
+  resistance      String
+  location        String
+  tags            Json    // string[]
+  embedding       Bytes?
+}
+
+model Shield {
+  id           String  @id @default(cuid())
+  name         String  @unique
+  shieldType   String  // Small, Medium, Greatshield
+  weight       Float?
+  guardBoost   Int?
+  skill        String
+  requirements String
+  location     String
+  tags         Json    // string[]
+  embedding    Bytes?
+}
+
+model Enemy {
+  id         String  @id @default(cuid())
+  name       String  @unique
+  category   String
+  locations  Json    // string[]
+  weaknesses Json    // string[]
+  drops      Json    // string[]
+  strategies String
+  tags       Json    // string[]
+  embedding  Bytes?
+}
+
+model NPC {
+  id        String  @id @default(cuid())
+  name      String  @unique
+  role      String
+  location  String
+  quests    Json    // string[]
+  services  Json    // string[]
+  tags      Json    // string[]
+  embedding Bytes?
+}
+
+model Merchant {
+  id           String  @id @default(cuid())
+  name         String  @unique
+  location     String
+  inventory    String
+  notableItems Json    // string[]
+  tags         Json    // string[]
+  embedding    Bytes?
+}
+
+model Expedition {
+  id               String  @id @default(cuid())
+  name             String  @unique
+  difficulty       String
+  recommendedLevel Int?
+  objectives       Json    // string[]
+  rewards          Json    // string[]
+  locations        Json    // string[]
+  strategies       String
+  tags             Json    // string[]
+  embedding        Bytes?
+}
+
+model ContentChunk {
+  id        String   @id @default(cuid())
+  type      String
+  name      String
+  section   String
+  content   String
+  tags      Json     // Array of tag strings stored as JSON
+  sourceUrl String?
+  embedding Bytes?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
