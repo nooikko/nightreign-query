@@ -824,7 +824,8 @@ const NIGHTFARER_CLASSES = [
   'executor',
 ] as const
 
-type NightfarerClass = (typeof NIGHTFARER_CLASSES)[number]
+// Using the type from ./types instead of local type
+// type NightfarerClass = (typeof NIGHTFARER_CLASSES)[number]
 
 /**
  * Extract weapon upgrade progression tables from wiki page
@@ -869,6 +870,7 @@ function extractWeaponUpgradeProgression(
           }
         }
       }
+      return true // continue
     })
 
     // If no table found by header, try finding tables with class-specific content
@@ -882,6 +884,7 @@ function extractWeaponUpgradeProgression(
           table = $(tbl)
           return false // break
         }
+        return true // continue
       })
     }
 
@@ -901,6 +904,7 @@ function extractWeaponUpgradeProgression(
         dataStartIndex = i
         return false // break
       }
+      return true // continue
     })
 
     // Parse data rows (Lv 1 through Lv 15)
@@ -910,7 +914,7 @@ function extractWeaponUpgradeProgression(
 
       const levelText = $(cells[0]).text().trim()
       const levelMatch = levelText.match(/(\d+)/)
-      if (!levelMatch) return
+      if (!levelMatch?.[1]) return
 
       const level = Number.parseInt(levelMatch[1], 10)
       if (level < 1 || level > 15) return
@@ -2688,18 +2692,22 @@ function extractPurchaseInfo(
   for (const pattern of purchasePatterns) {
     let match: RegExpExecArray | null = pattern.exec(fullContent)
     while (match !== null) {
-      const merchantName = cleanText(match[1])
-      const priceStr = match[2] || match[3]
-      const price = parseNumber(priceStr.replace(/,/g, '')) || 0
+      const merchantNameRaw = match[1]
+      const priceStr = match[2] ?? match[3]
 
-      if (merchantName && price > 0) {
-        // Avoid duplicates
-        if (!purchases.some((p) => p.merchantName === merchantName)) {
-          purchases.push({
-            merchantName,
-            location: '', // Would need more parsing to extract
-            price,
-          })
+      if (merchantNameRaw && priceStr) {
+        const merchantName = cleanText(merchantNameRaw)
+        const price = parseNumber(priceStr.replace(/,/g, '')) ?? 0
+
+        if (merchantName && price > 0) {
+          // Avoid duplicates
+          if (!purchases.some((p) => p.merchantName === merchantName)) {
+            purchases.push({
+              merchantName,
+              location: '', // Would need more parsing to extract
+              price,
+            })
+          }
         }
       }
       match = pattern.exec(fullContent)
@@ -2710,11 +2718,16 @@ function extractPurchaseInfo(
   const stockPattern = /stock:?\s*(\d+)/gi
   let stockMatch: RegExpExecArray | null = stockPattern.exec(fullContent)
   while (stockMatch !== null) {
-    const stock = parseNumber(stockMatch[1])
-    // Add stock to last purchase if available
-    if (stock && purchases.length > 0) {
-      const lastPurchase = purchases[purchases.length - 1]
-      purchases[purchases.length - 1] = { ...lastPurchase, stock }
+    const stockStr = stockMatch[1]
+    if (stockStr) {
+      const stock = parseNumber(stockStr)
+      // Add stock to last purchase if available
+      if (stock && purchases.length > 0) {
+        const lastPurchase = purchases[purchases.length - 1]
+        if (lastPurchase) {
+          purchases[purchases.length - 1] = { ...lastPurchase, stock }
+        }
+      }
     }
     stockMatch = stockPattern.exec(fullContent)
   }

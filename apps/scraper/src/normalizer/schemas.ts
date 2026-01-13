@@ -117,6 +117,29 @@ export const BossStatusResistancesSchema = z.object({
 })
 
 /**
+ * Schema for a single boss attack pattern
+ */
+export const BossAttackPatternSchema = z.object({
+  name: z.string().describe('Name of the attack'),
+  description: z.string().describe('What the attack does'),
+  damageTypes: z.array(z.string()).optional().describe('Damage types dealt'),
+  statusEffects: z.array(z.string()).optional().describe('Status effects inflicted'),
+  counter: z.string().optional().describe('How to dodge/counter this attack'),
+  tells: z.array(z.string()).optional().describe('Visual/audio tells before the attack'),
+  phases: z.array(z.number()).optional().describe('Which phases this attack appears in'),
+})
+
+/**
+ * Schema for boss attack patterns organized by phase
+ */
+export const BossAttackPatternsSchema = z.object({
+  general: z.array(BossAttackPatternSchema).optional().describe('Attacks available in all phases'),
+  phase1: z.array(BossAttackPatternSchema).optional().describe('Phase 1 specific attacks'),
+  phase2: z.array(BossAttackPatternSchema).optional().describe('Phase 2 specific attacks'),
+  phase3: z.array(BossAttackPatternSchema).optional().describe('Phase 3 specific attacks'),
+})
+
+/**
  * Normalized Boss schema matching Prisma Boss model
  */
 export const NormalizedBossSchema = z.object({
@@ -165,6 +188,9 @@ export const NormalizedBossSchema = z.object({
     .array(z.string())
     .optional()
     .describe('Status effects the boss can inflict'),
+  attackPatterns: BossAttackPatternsSchema.optional().describe(
+    'Detailed attack patterns organized by phase',
+  ),
   tags: z
     .array(z.string())
     .describe('Tags for search filtering (e.g., ["fire-weak", "optional"])'),
@@ -310,6 +336,15 @@ export const NormalizedWeaponSchema = z.object({
 })
 
 /**
+ * Schema for character-specific relic effects
+ */
+export const RelicClassEffectSchema = z.object({
+  nightfarerClass: NightfarerClassSchema.describe('The Nightfarer class this effect applies to'),
+  effect: z.string().describe('The specific effect for this class'),
+  notes: z.string().optional().describe('Additional notes about this class effect'),
+})
+
+/**
  * Normalized Relic schema matching Prisma Relic model
  */
 export const NormalizedRelicSchema = z.object({
@@ -319,6 +354,10 @@ export const NormalizedRelicSchema = z.object({
     .string()
     .describe('Relic tier: Delicate, Polished, Grand, or specific tier name'),
   effects: z.array(z.string()).describe('List of effects granted by the relic'),
+  classEffects: z
+    .array(RelicClassEffectSchema)
+    .optional()
+    .describe('Character-specific effects (different per Nightfarer class)'),
   tags: z
     .array(z.string())
     .describe(
@@ -338,6 +377,40 @@ export const NightfarerStatsSchema = z.object({
   intelligence: z.number().optional().describe('Intelligence stat'),
   faith: z.number().optional().describe('Faith stat'),
   arcane: z.number().optional().describe('Arcane stat'),
+})
+
+/**
+ * Schema for Nightfarer level stats (HP/FP/Stamina per level)
+ */
+export const NightfarerLevelStatsSchema = z.object({
+  level: z.number().min(1).max(15).describe('Level (1-15)'),
+  hp: z.number().optional().describe('HP at this level'),
+  fp: z.number().optional().describe('FP at this level'),
+  stamina: z.number().optional().describe('Stamina at this level'),
+})
+
+/**
+ * Schema for Nightfarer attribute progression per level
+ */
+export const NightfarerAttributeProgressionSchema = z.object({
+  level: z.number().min(1).max(15).describe('Level (1-15)'),
+  vigor: z.number().optional().describe('Vigor at this level'),
+  mind: z.number().optional().describe('Mind at this level'),
+  endurance: z.number().optional().describe('Endurance at this level'),
+  strength: z.number().optional().describe('Strength at this level'),
+  dexterity: z.number().optional().describe('Dexterity at this level'),
+  intelligence: z.number().optional().describe('Intelligence at this level'),
+  faith: z.number().optional().describe('Faith at this level'),
+  arcane: z.number().optional().describe('Arcane at this level'),
+})
+
+/**
+ * Schema for complete Nightfarer progression
+ */
+export const NightfarerProgressionSchema = z.object({
+  characterName: z.string().describe('Name of the Nightfarer class'),
+  statProgression: z.array(NightfarerLevelStatsSchema).describe('HP/FP/Stamina per level 1-15'),
+  attributeProgression: z.array(NightfarerAttributeProgressionSchema).optional().describe('Attribute progression per level'),
 })
 
 /**
@@ -367,6 +440,9 @@ export const NormalizedNightfarerSchema = z.object({
     .string()
     .optional()
     .describe('Starting vessel/equipment description - omit if not found'),
+  progression: NightfarerProgressionSchema.optional().describe(
+    'Level progression (HP/FP/Stamina per level 1-15)',
+  ),
   tags: z
     .array(z.string())
     .describe(
@@ -380,10 +456,12 @@ export const NormalizedNightfarerSchema = z.object({
 export const NormalizedSkillSchema = z.object({
   name: z.string().describe('Name of the skill'),
   fpCost: z.number().describe('FP cost to use the skill'),
+  staminaCost: z.number().optional().describe('Stamina cost to use the skill'),
   weaponTypes: z
     .array(z.string())
     .describe('Weapon types that can use this skill'),
   effect: z.string().describe('Description of the skill effect'),
+  location: z.string().optional().describe('Where to obtain the skill'),
   tags: z
     .array(z.string())
     .describe('Tags for search filtering (e.g., ["aoe", "buff", "damage"])'),
@@ -421,6 +499,31 @@ export const NormalizedSpellSchema = z.object({
 })
 
 /**
+ * Schema for armor damage negation stats (8 damage types)
+ */
+export const ArmorDamageNegationSchema = z.object({
+  physical: z.number().optional().describe('Physical damage negation'),
+  strike: z.number().optional().describe('Strike damage negation'),
+  slash: z.number().optional().describe('Slash damage negation'),
+  pierce: z.number().optional().describe('Pierce damage negation'),
+  magic: z.number().optional().describe('Magic damage negation'),
+  fire: z.number().optional().describe('Fire damage negation'),
+  lightning: z.number().optional().describe('Lightning damage negation'),
+  holy: z.number().optional().describe('Holy damage negation'),
+})
+
+/**
+ * Schema for armor resistance stats (5 resistance types)
+ */
+export const ArmorResistanceSchema = z.object({
+  immunity: z.number().optional().describe('Immunity (poison/rot resistance)'),
+  robustness: z.number().optional().describe('Robustness (bleed/frost resistance)'),
+  focus: z.number().optional().describe('Focus (sleep/madness resistance)'),
+  vitality: z.number().optional().describe('Vitality (death resistance)'),
+  poise: z.number().optional().describe('Poise value'),
+})
+
+/**
  * Normalized Armor schema
  */
 export const NormalizedArmorSchema = z.object({
@@ -428,12 +531,26 @@ export const NormalizedArmorSchema = z.object({
   slot: z.string().describe('Armor slot: Head, Chest, Arms, or Legs'),
   weight: z.number().optional().describe('Weight of the armor'),
   poise: z.number().optional().describe('Poise value'),
-  damageNegation: z.string().describe('Summary of damage negation stats'),
-  resistance: z.string().describe('Summary of resistance stats'),
+  damageNegation: ArmorDamageNegationSchema.describe('Damage negation stats for 8 damage types'),
+  resistance: ArmorResistanceSchema.describe('Resistance stats for 5 resistance types'),
   location: z.string().describe('Where to find the armor'),
   tags: z
     .array(z.string())
     .describe('Tags for search filtering (e.g., ["heavy", "high-poise"])'),
+})
+
+/**
+ * Schema for shield guard stats (damage negation when blocking)
+ */
+export const ShieldGuardSchema = z.object({
+  physical: z.number().optional().describe('Physical block percentage'),
+  strike: z.number().optional().describe('Strike block percentage'),
+  slash: z.number().optional().describe('Slash block percentage'),
+  pierce: z.number().optional().describe('Pierce block percentage'),
+  magic: z.number().optional().describe('Magic block percentage'),
+  fire: z.number().optional().describe('Fire block percentage'),
+  lightning: z.number().optional().describe('Lightning block percentage'),
+  holy: z.number().optional().describe('Holy block percentage'),
 })
 
 /**
@@ -445,7 +562,8 @@ export const NormalizedShieldSchema = z.object({
     .string()
     .describe('Shield category: Small, Medium, or Greatshield'),
   weight: z.number().optional().describe('Weight of the shield'),
-  guardBoost: z.number().optional().describe('Guard boost value'),
+  guardBoost: z.number().optional().describe('Guard boost value (stamina efficiency)'),
+  guard: ShieldGuardSchema.optional().describe('Guard stats (damage negation when blocking)'),
   skill: z.string().describe('Associated weapon skill'),
   requirements: z.string().describe('Attribute requirements to wield'),
   location: z.string().describe('Where to find the shield'),
@@ -467,6 +585,8 @@ export const NormalizedEnemySchema = z.object({
     .describe('Locations where this enemy is found'),
   weaknesses: z.array(z.string()).describe('Damage types the enemy is weak to'),
   drops: z.array(z.string()).describe('Items dropped by this enemy'),
+  hp: z.number().optional().describe('Enemy HP'),
+  runes: z.number().optional().describe('Runes dropped on defeat'),
   strategies: z.string().describe('Tips for defeating this enemy'),
   tags: z
     .array(z.string())
@@ -488,12 +608,22 @@ export const NormalizedNPCSchema = z.object({
 })
 
 /**
+ * Schema for merchant inventory item
+ */
+export const MerchantItemSchema = z.object({
+  name: z.string().describe('Name of the item'),
+  price: z.number().describe('Price in runes'),
+  currency: z.string().describe('Currency type (usually "Runes")'),
+  stock: z.number().optional().describe('Available stock (if limited)'),
+})
+
+/**
  * Normalized Merchant schema
  */
 export const NormalizedMerchantSchema = z.object({
   name: z.string().describe('Name of the merchant'),
   location: z.string().describe('Where to find the merchant'),
-  inventory: z.string().describe('Summary of items sold'),
+  inventory: z.array(MerchantItemSchema).describe('Items sold by this merchant'),
   notableItems: z.array(z.string()).describe('Notable items available'),
   tags: z
     .array(z.string())

@@ -604,9 +604,14 @@ export class ClaudeNormalizer {
         return { success: false, error: response.error }
       }
 
+      // Format inventory items as string for chunk generation
+      const inventoryStr = response.data.inventory
+        .map((item) => `${item.name} (${item.price} ${item.currency})`)
+        .join(', ')
+
       const chunks = this.generateChunks('merchant', response.data.name, {
         overview: `${response.data.name} is located at ${response.data.location}.`,
-        inventory: response.data.inventory,
+        inventory: inventoryStr || 'No items listed',
         notableItems:
           response.data.notableItems.length > 0
             ? `Notable Items: ${response.data.notableItems.join(', ')}`

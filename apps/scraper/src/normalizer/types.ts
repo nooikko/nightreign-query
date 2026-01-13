@@ -180,6 +180,8 @@ export interface ParsedBoss extends ParsedContentBase {
   readonly damageTypesDealt?: string[]
   /** Status effects inflicted by the boss */
   readonly statusEffectsInflicted?: string[]
+  /** Detailed attack patterns organized by phase */
+  readonly attackPatterns?: BossAttackPatterns
 }
 
 export interface BossPhase {
@@ -245,6 +247,36 @@ export interface StatusResistanceValue {
   readonly value?: number
   /** Resistance progression values after each proc */
   readonly progression?: number[]
+}
+
+/**
+ * Individual boss attack pattern
+ */
+export interface BossAttackPattern {
+  readonly name: string
+  readonly description: string
+  /** Damage types dealt by this attack */
+  readonly damageTypes?: string[]
+  /** Status effects inflicted by this attack */
+  readonly statusEffects?: string[]
+  /** How to dodge/counter this attack */
+  readonly counter?: string
+  /** Attack wind-up timing/tells */
+  readonly tells?: string[]
+  /** Which phase(s) this attack appears in */
+  readonly phases?: number[]
+}
+
+/**
+ * Boss attack patterns organized by phase
+ */
+export interface BossAttackPatterns {
+  /** General attacks available in all phases */
+  readonly general?: BossAttackPattern[]
+  /** Phase-specific attacks */
+  readonly phase1?: BossAttackPattern[]
+  readonly phase2?: BossAttackPattern[]
+  readonly phase3?: BossAttackPattern[]
 }
 
 /**
@@ -357,6 +389,15 @@ export interface AttributeRequirements {
 }
 
 /**
+ * Character-specific effect for a relic
+ */
+export interface RelicClassEffect {
+  readonly nightfarerClass: NightfarerClass
+  readonly effect: string
+  readonly notes?: string
+}
+
+/**
  * Parsed relic data from Fextralife
  */
 export interface ParsedRelic extends ParsedContentBase {
@@ -365,8 +406,10 @@ export interface ParsedRelic extends ParsedContentBase {
   readonly color: string
   /** Relic tier (e.g., "Tier 1", "Tier 2", "Tier 3") */
   readonly tier: string
-  /** Effects granted by the relic */
+  /** Effects granted by the relic (general effects) */
   readonly effects: string[]
+  /** Character-specific effects (different per Nightfarer class) */
+  readonly classEffects?: RelicClassEffect[]
   /** How to obtain the relic */
   readonly location: string
 }
@@ -386,6 +429,8 @@ export interface ParsedNightfarer extends ParsedContentBase {
   readonly ultimate: NightfarerAbility
   /** Vessel (starting equipment/loadout) */
   readonly vessel: VesselInfo
+  /** Level progression (HP/FP/Stamina per level 1-15) */
+  readonly progression?: NightfarerProgression
 }
 
 export interface NightfarerStats {
@@ -410,6 +455,40 @@ export interface VesselInfo {
   readonly description: string
   readonly startingWeapon?: string
   readonly startingArmor?: string
+}
+
+/**
+ * Nightfarer level progression stats (HP/FP/Stamina per level 1-15)
+ */
+export interface NightfarerLevelStats {
+  readonly level: number
+  readonly hp?: number
+  readonly fp?: number
+  readonly stamina?: number
+}
+
+/**
+ * Nightfarer attribute progression per level
+ */
+export interface NightfarerAttributeProgression {
+  readonly level: number
+  readonly vigor?: number
+  readonly mind?: number
+  readonly endurance?: number
+  readonly strength?: number
+  readonly dexterity?: number
+  readonly intelligence?: number
+  readonly faith?: number
+  readonly arcane?: number
+}
+
+/**
+ * Complete Nightfarer progression data
+ */
+export interface NightfarerProgression {
+  readonly characterName: string
+  readonly statProgression: NightfarerLevelStats[]
+  readonly attributeProgression?: NightfarerAttributeProgression[]
 }
 
 /**
@@ -504,8 +583,10 @@ export interface ParsedShield extends ParsedContentBase {
   readonly type: 'shield'
   /** Shield category (Small, Medium, Greatshield) */
   readonly shieldType: string
-  /** Guard stats */
+  /** Guard stats (damage negation when blocking) */
   readonly guard: DamageNegation
+  /** Guard boost value (stamina efficiency when blocking) */
+  readonly guardBoost?: number
   /** Associated skill */
   readonly skill: string
   /** Weight of the shield */

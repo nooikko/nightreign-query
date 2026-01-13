@@ -9,24 +9,25 @@ datasource db {
 }
 
 model Boss {
-  id                    String  @id @default(cuid())
-  name                  String  @unique
-  category              String
-  location              String
-  weaknesses            Json    // string[]
-  phases                Json    // BossPhase[]
-  strategies            String
-  rewards               String
-  hpByPlayerCount       Json?   // {solo?, duo?, trio?}
-  stance                Int?
-  parryInfo             Json?   // {canParry, parriesRequired?, notes?}
-  damageNegation        Json?   // {phase1?, phase2?}
-  statusResistances     Json?   // {poison?, scarletRot?, bloodLoss?, frostbite?, sleep?, madness?}
-  strongerVs            Json?   // string[] - damage types boss is resistant to
-  damageTypesDealt      Json?   // string[]
-  statusEffectsInflicted Json?  // string[]
-  tags                  Json?   // string[]
-  embedding             Bytes?
+  id                     String  @id @default(cuid())
+  name                   String  @unique
+  category               String
+  location               String
+  weaknesses             Json    // string[]
+  phases                 Json    // BossPhase[]
+  strategies             String
+  rewards                String
+  hpByPlayerCount        Json?   // {solo?, duo?, trio?}
+  stance                 Int?
+  parryInfo              Json?   // {canParry, parriesRequired?, notes?}
+  damageNegation         Json?   // {phase1?, phase2?}
+  statusResistances      Json?   // {poison?, scarletRot?, bloodLoss?, frostbite?, sleep?, madness?}
+  strongerVs             Json?   // string[] - damage types boss is resistant to
+  damageTypesDealt       Json?   // string[]
+  statusEffectsInflicted Json?   // string[]
+  attackPatterns         Json?   // BossAttackPatterns - {general?, phase1?, phase2?, phase3?}
+  tags                   Json?   // string[]
+  embedding              Bytes?
 }
 
 model Weapon {
@@ -46,33 +47,37 @@ model Weapon {
 }
 
 model Relic {
-  id        String  @id @default(cuid())
-  name      String  @unique
-  color     String
-  tier      String
-  effects   Json    // Array of effect strings stored as JSON
-  tags      Json?   // string[]
-  embedding Bytes?
+  id           String  @id @default(cuid())
+  name         String  @unique
+  color        String
+  tier         String
+  effects      Json    // Array of effect strings stored as JSON
+  classEffects Json?   // RelicClassEffect[] - character-specific effects per Nightfarer
+  tags         Json?   // string[]
+  embedding    Bytes?
 }
 
 model Nightfarer {
-  id        String  @id @default(cuid())
-  name      String  @unique
-  stats     Json
-  passive   String?
-  skill     String?
-  ultimate  String?
-  vessel    String?
-  tags      Json?   // string[]
-  embedding Bytes?
+  id          String  @id @default(cuid())
+  name        String  @unique
+  stats       Json
+  passive     String?
+  skill       String?
+  ultimate    String?
+  vessel      String?
+  progression Json?   // NightfarerProgression - HP/FP/Stamina per level 1-15
+  tags        Json?   // string[]
+  embedding   Bytes?
 }
 
 model Skill {
   id          String  @id @default(cuid())
   name        String  @unique
   fpCost      Int
+  staminaCost Int?    // Stamina cost to use
   weaponTypes Json    // Array of weapon type strings stored as JSON
   effect      String
+  location    String? // Where to obtain the skill
   tags        Json?   // string[]
   embedding   Bytes?
 }
@@ -122,8 +127,8 @@ model Armor {
   slot            String  // Head, Chest, Arms, Legs
   weight          Float?
   poise           Int?
-  damageNegation  String
-  resistance      String
+  damageNegation  Json    // DamageNegation - {physical?, strike?, slash?, pierce?, magic?, fire?, lightning?, holy?}
+  resistance      Json    // Resistance - {immunity?, robustness?, focus?, vitality?, poise?}
   location        String
   tags            Json    // string[]
   embedding       Bytes?
@@ -135,6 +140,7 @@ model Shield {
   shieldType   String  // Small, Medium, Greatshield
   weight       Float?
   guardBoost   Int?
+  guard        Json?   // DamageNegation - blocking damage reduction per type
   skill        String
   requirements String
   location     String
@@ -149,6 +155,8 @@ model Enemy {
   locations  Json    // string[]
   weaknesses Json    // string[]
   drops      Json    // string[]
+  hp         Int?    // Enemy HP
+  runes      Int?    // Runes dropped on defeat
   strategies String
   tags       Json    // string[]
   embedding  Bytes?
@@ -169,7 +177,7 @@ model Merchant {
   id           String  @id @default(cuid())
   name         String  @unique
   location     String
-  inventory    String
+  inventory    Json    // MerchantItem[] - {name, price, currency}[]
   notableItems Json    // string[]
   tags         Json    // string[]
   embedding    Bytes?
@@ -189,15 +197,16 @@ model Expedition {
 }
 
 model Item {
-  id          String  @id @default(cuid())
-  name        String  @unique
-  category    String  // Key Item, Consumable, Crafting Material, Upgrade Material, etc.
-  effect      String  // What the item does
-  description String  // Flavor text/lore
-  locations   Json    // string[] - where to find it
-  uses        Int?    // Number of uses (null for unlimited/key items)
-  tags        Json    // string[]
-  embedding   Bytes?
+  id                String  @id @default(cuid())
+  name              String  @unique
+  category          String  // Key Item, Consumable, Crafting Material, Upgrade Material, etc.
+  effect            String  // What the item does
+  description       String  // Flavor text/lore
+  locations         Json    // string[] - where to find it
+  purchaseLocations Json?   // ItemPurchaseInfo[] - {merchantName, location, price, stock?}[]
+  uses              Int?    // Number of uses (null for unlimited/key items)
+  tags              Json    // string[]
+  embedding         Bytes?
 }
 
 model ContentChunk {
