@@ -195,8 +195,59 @@ export const SearchBar = forwardRef<SearchBarRef, SearchBarProps>(
             )
           }
 
-          const data = (await response.json()) as SearchResult
-          onSearchResults(data)
+          // Check if this is a streaming response (format: true)
+          const contentType = response.headers.get('content-type')
+          if (contentType?.includes('text/event-stream')) {
+            // Handle SSE streaming response
+            const reader = response.body?.getReader()
+            if (!reader) {
+              throw new Error('Failed to get response reader')
+            }
+
+            const decoder = new TextDecoder()
+            let formattedContent = ''
+            let timing: SearchResult['timing'] | undefined
+
+            while (true) {
+              const { done, value } = await reader.read()
+              if (done) break
+
+              const chunk = decoder.decode(value, { stream: true })
+              const lines = chunk.split('\n')
+
+              for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                  try {
+                    const data = JSON.parse(line.slice(6))
+                    if (data.type === 'chunk') {
+                      formattedContent += data.content
+                    } else if (data.type === 'timing') {
+                      timing = data.timing
+                    } else if (data.type === 'done') {
+                      timing = data.timing
+                    } else if (data.type === 'error') {
+                      throw new Error(data.error)
+                    }
+                  } catch (parseError) {
+                    // Skip malformed JSON lines
+                    if (parseError instanceof SyntaxError) continue
+                    throw parseError
+                  }
+                }
+              }
+            }
+
+            // Return formatted content as a special result
+            onSearchResults({
+              results: [],
+              timing: timing || { embedding: 0, search: 0, total: 0 },
+              formatted: formattedContent,
+            } as SearchResult & { formatted: string })
+          } else {
+            // Handle regular JSON response
+            const data = (await response.json()) as SearchResult
+            onSearchResults(data)
+          }
         } catch (error) {
           // Ignore abort errors (they're intentional)
           if (error instanceof Error && error.name === 'AbortError') {

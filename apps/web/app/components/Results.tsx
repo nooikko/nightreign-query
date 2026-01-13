@@ -532,6 +532,47 @@ export function Results({
   }
 
   /**
+   * Formatted results display (from SearchBar SSE parsing)
+   */
+  if (results && 'formatted' in results && results.formatted) {
+    const formatted = results.formatted as string
+    return (
+      <div className="w-full max-w-4xl mx-auto space-y-6">
+        {/* Formatted content */}
+        <article
+          className="prose prose-invert prose-sm max-w-none bg-card border border-border rounded-lg p-6"
+          aria-label="Formatted search response"
+        >
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{formatted}</ReactMarkdown>
+        </article>
+
+        {/* Timing information */}
+        {results.timing && (
+          <div className="flex flex-wrap gap-4 text-xs text-muted-foreground bg-muted/50 rounded-lg p-4">
+            <div>
+              <span className="font-medium">Embedding:</span>{' '}
+              {results.timing.embedding}ms
+            </div>
+            <div>
+              <span className="font-medium">Search:</span> {results.timing.search}
+              ms
+            </div>
+            {results.timing.format !== undefined && (
+              <div>
+                <span className="font-medium">Format:</span>{' '}
+                {results.timing.format}ms
+              </div>
+            )}
+            <div className="font-semibold">
+              <span className="font-medium">Total:</span> {results.timing.total}ms
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  /**
    * Raw results display
    */
   if (results) {
