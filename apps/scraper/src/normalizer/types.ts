@@ -551,6 +551,33 @@ export interface ParsedExpedition extends ParsedContentBase {
 }
 
 /**
+ * Parsed item data (key items, consumables, materials)
+ */
+export interface ParsedItem extends ParsedContentBase {
+  readonly type: 'item'
+  /** Item category: Key Item, Consumable, Crafting Material, Upgrade Material, etc. */
+  readonly category: string
+  /** What the item does / its effect */
+  readonly effect: string
+  /** Where to find this item (full text, not just first line) */
+  readonly locations: string[]
+  /** Number of uses (undefined for key items/unlimited) */
+  readonly uses?: number
+  /** Purchase information if sold by merchants */
+  readonly purchaseLocations?: ItemPurchaseInfo[]
+}
+
+/**
+ * Information about where an item can be purchased
+ */
+export interface ItemPurchaseInfo {
+  readonly merchantName: string
+  readonly location: string
+  readonly price: number
+  readonly stock?: number
+}
+
+/**
  * Union type of all parsed content types
  */
 export type ParsedContent =
@@ -568,6 +595,7 @@ export type ParsedContent =
   | ParsedMerchant
   | ParsedLocation
   | ParsedExpedition
+  | ParsedItem
 
 /**
  * Parser result with success/failure handling

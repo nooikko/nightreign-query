@@ -498,6 +498,45 @@ export const NormalizedExpeditionSchema = z.object({
 })
 
 /**
+ * Schema for item purchase information
+ */
+export const ItemPurchaseInfoSchema = z.object({
+  merchantName: z.string().describe('Name of the merchant'),
+  location: z.string().describe('Location of the merchant'),
+  price: z.number().describe('Price in runes'),
+  stock: z.number().optional().describe('Available stock (if limited)'),
+})
+
+/**
+ * Normalized Item schema for Key Items, Consumables, and Materials
+ */
+export const NormalizedItemSchema = z.object({
+  name: z.string().describe('Name of the item'),
+  category: z
+    .string()
+    .describe(
+      'Item category: Key Item, Consumable, Crafting Material, Upgrade Material, etc.',
+    ),
+  effect: z.string().describe('What the item does or its purpose'),
+  locations: z
+    .array(z.string())
+    .describe('Where to find this item (all known locations)'),
+  uses: z
+    .number()
+    .optional()
+    .describe('Number of uses (omit for key items or unlimited)'),
+  purchaseLocations: z
+    .array(ItemPurchaseInfoSchema)
+    .optional()
+    .describe('Merchants who sell this item with prices'),
+  tags: z
+    .array(z.string())
+    .describe(
+      'Tags for search filtering (e.g., ["key-item", "unlock", "imp-statue"])',
+    ),
+})
+
+/**
  * Content chunk schema for search indexing
  */
 export const ContentChunkSchema = z.object({
@@ -517,6 +556,7 @@ export const ContentChunkSchema = z.object({
       'merchant',
       'location',
       'expedition',
+      'item',
       'guide',
     ])
     .describe('Type of content'),
@@ -543,6 +583,7 @@ export type NormalizedNPC = z.infer<typeof NormalizedNPCSchema>
 export type NormalizedMerchant = z.infer<typeof NormalizedMerchantSchema>
 export type NormalizedLocation = z.infer<typeof NormalizedLocationSchema>
 export type NormalizedExpedition = z.infer<typeof NormalizedExpeditionSchema>
+export type NormalizedItem = z.infer<typeof NormalizedItemSchema>
 export type ContentChunk = z.infer<typeof ContentChunkSchema>
 
 /**
@@ -563,4 +604,5 @@ export const CONTENT_TYPE_SCHEMAS = {
   merchant: NormalizedMerchantSchema,
   location: NormalizedLocationSchema,
   expedition: NormalizedExpeditionSchema,
+  item: NormalizedItemSchema,
 } as const

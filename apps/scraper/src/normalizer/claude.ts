@@ -21,6 +21,8 @@ import {
   NormalizedEnemySchema,
   type NormalizedExpedition,
   NormalizedExpeditionSchema,
+  type NormalizedItem,
+  NormalizedItemSchema,
   type NormalizedLocation,
   NormalizedLocationSchema,
   type NormalizedMerchant,
@@ -87,6 +89,7 @@ export type NormalizedContent =
   | NormalizedMerchant
   | NormalizedLocation
   | NormalizedExpedition
+  | NormalizedItem
 
 /**
  * Claude Normalizer for content normalization
@@ -142,6 +145,8 @@ export class ClaudeNormalizer {
         return this.normalizeLocation(parsed)
       case 'expedition':
         return this.normalizeExpedition(parsed)
+      case 'item':
+        return this.normalizeItem(parsed)
       default:
         return {
           success: false,
@@ -694,6 +699,50 @@ export class ClaudeNormalizer {
   }
 
   /**
+   * Normalize item content (Key Items, Consumables, Materials)
+   */
+  private async normalizeItem(
+    parsed: ParsedContent,
+  ): Promise<NormalizationResult<NormalizedItem>> {
+    const prompt = this.buildNormalizationPrompt('item', parsed)
+
+    try {
+      const response = await this.callClaude(prompt, NormalizedItemSchema)
+
+      if (!response.success) {
+        return { success: false, error: response.error }
+      }
+
+      // Build locations text
+      const locationsText =
+        response.data.locations.length > 0
+          ? response.data.locations.join('; ')
+          : 'Unknown'
+
+      // Build purchase info if available
+      const purchaseText = response.data.purchaseLocations
+        ? response.data.purchaseLocations
+            .map((p) => `${p.merchantName}: ${p.price} runes`)
+            .join('; ')
+        : ''
+
+      const chunks = this.generateChunks('item', response.data.name, {
+        overview: `${response.data.name} is a ${response.data.category}.`,
+        effect: `Effect: ${response.data.effect}`,
+        locations: `Where to find: ${locationsText}`,
+        ...(purchaseText && { purchase: `Purchase: ${purchaseText}` }),
+      })
+
+      return { success: true, data: response.data, chunks }
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }
+    }
+  }
+
+  /**
    * Call Claude API with structured output
    */
   private async callClaude<T extends z.ZodType>(
@@ -944,6 +993,22 @@ Note: This schema is for nightfarer CLASS pages only. If the content is not abou
   "strategies": "string - tips for completing the expedition",
   "tags": ["array of search tags like co-op, hard, short, etc"]
 }`,
+      item: `Output Schema:
+{
+  "name": "string - item name",
+  "category": "string - Key Item, Consumable, Crafting Material, Upgrade Material, etc.",
+  "effect": "string - what the item does or its purpose",
+  "locations": ["array of ALL known locations where item can be found - include details like region, building type, etc."],
+  "uses": 1 (optional number - omit for key items or unlimited use items),
+  "purchaseLocations": [{"merchantName": "Spirit Merchant", "location": "Limgrave", "price": 5000, "stock": 3}] (optional - only if sold by merchants),
+  "tags": ["array of search tags like key-item, unlock, imp-statue, consumable, material, etc."]
+}
+
+IMPORTANT: For location data, extract ALL location information from the content. This includes:
+- Great Churches, Forts, Ruins where the item can be found
+- Merchants who sell it (include in both locations and purchaseLocations)
+- Any drop sources from enemies
+- Region names (Limgrave, Liurnia, etc.)`,
     }
 
     return descriptions[contentType] || ''

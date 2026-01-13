@@ -13,6 +13,7 @@ import type {
   BossPhase,
   BossReward,
   DamageNegation,
+  ItemPurchaseInfo,
   MerchantItem,
   NightfarerAbility,
   NightfarerStats,
@@ -22,6 +23,7 @@ import type {
   ParsedContent,
   ParsedEnemy,
   ParsedExpedition,
+  ParsedItem,
   ParsedLocation,
   ParsedMerchant,
   ParsedNPC,
@@ -2325,18 +2327,322 @@ function inferExpeditionDifficulty($: ReturnType<typeof loadHtml>): string {
 }
 
 // ============================================================================
+// ITEM PARSER
+// ============================================================================
+
+/**
+ * Parse an item page from Fextralife (Key Items, Consumables, Materials)
+ *
+ * Extracts: name, category, effect, locations (full content), purchase info
+ */
+export function parseItem(html: string, url: string): ParseResult<ParsedItem> {
+  try {
+    const $ = loadHtml(html)
+    const warnings: string[] = []
+
+    const name = extractPageTitle($) || 'Unknown Item'
+    const description = extractDescription($)
+
+    if (!name || name === 'Unknown Item') {
+      warnings.push('Could not extract item name from page')
+    }
+
+    const infobox = extractInfobox($)
+
+    // Item category (Key Item, Consumable, Crafting Material, etc.)
+    const category =
+      infobox.get('type') ||
+      infobox.get('category') ||
+      infobox.get('item type') ||
+      inferItemCategory($, name)
+
+    // Effect / what the item does
+    const effect =
+      infobox.get('effect') ||
+      infobox.get('use') ||
+      infobox.get('description') ||
+      description ||
+      ''
+
+    // Extract full location content (not just first line!)
+    const locationSectionContent = extractSection(
+      $,
+      /where to find|location|how to get|how to obtain/i,
+    )
+
+    // Parse location content into array of location entries
+    const locations = parseLocationEntries(locationSectionContent)
+
+    // If no section found, try infobox
+    if (locations.length === 0) {
+      const infoboxLocation =
+        infobox.get('location') ||
+        infobox.get('found') ||
+        infobox.get('obtained')
+      if (infoboxLocation) {
+        locations.push(cleanText(infoboxLocation))
+      }
+    }
+
+    // Extract purchase information from merchants
+    const purchaseLocations = extractPurchaseInfo($, locationSectionContent)
+
+    // Number of uses (if applicable)
+    const usesText = infobox.get('uses') || infobox.get('use count') || ''
+    const uses = parseNumber(usesText)
+
+    const result: ParsedItem = {
+      type: 'item',
+      name: cleanText(name),
+      sourceUrl: url,
+      description: cleanText(description),
+      parseSuccess: true,
+      parseWarnings: warnings,
+      category: cleanText(category),
+      effect: cleanText(effect),
+      locations,
+      uses: uses ?? undefined,
+      purchaseLocations:
+        purchaseLocations.length > 0 ? purchaseLocations : undefined,
+    }
+
+    return { success: true, data: result }
+  } catch (error) {
+    return {
+      success: false,
+      error: `Failed to parse item page: ${error instanceof Error ? error.message : String(error)}`,
+    }
+  }
+}
+
+/**
+ * Infer item category from page content
+ */
+function inferItemCategory(
+  $: ReturnType<typeof loadHtml>,
+  name: string,
+): string {
+  const content = $('#wiki-content-block').text().toLowerCase()
+  const nameLower = name.toLowerCase()
+
+  // Check for key item indicators
+  if (
+    content.includes('key item') ||
+    nameLower.includes('key') ||
+    content.includes('used to unlock') ||
+    content.includes('breaks the seal')
+  ) {
+    return 'Key Item'
+  }
+
+  // Check for consumable indicators
+  if (
+    content.includes('consumable') ||
+    content.includes('single use') ||
+    content.includes('one time use') ||
+    nameLower.includes('grease') ||
+    nameLower.includes('pot') ||
+    nameLower.includes('bolus')
+  ) {
+    return 'Consumable'
+  }
+
+  // Check for crafting material
+  if (
+    content.includes('crafting material') ||
+    content.includes('craft ') ||
+    nameLower.includes('bone') ||
+    nameLower.includes('flower') ||
+    nameLower.includes('mushroom')
+  ) {
+    return 'Crafting Material'
+  }
+
+  // Check for upgrade material
+  if (
+    content.includes('upgrade') ||
+    nameLower.includes('smithing stone') ||
+    nameLower.includes('somber')
+  ) {
+    return 'Upgrade Material'
+  }
+
+  return 'Item'
+}
+
+/**
+ * Parse location section content into array of location entries
+ *
+ * Handles multi-line content with region headers and bullet points
+ */
+function parseLocationEntries(sectionContent: string): string[] {
+  if (!sectionContent.trim()) {
+    return []
+  }
+
+  const locations: string[] = []
+  const lines = sectionContent.split('\n').filter((l) => l.trim())
+
+  for (const line of lines) {
+    const cleaned = cleanText(line.replace(/^[•\-*]\s*/, ''))
+    if (cleaned && cleaned.length > 5) {
+      // Filter out very short entries
+      locations.push(cleaned)
+    }
+  }
+
+  return locations
+}
+
+/**
+ * Extract merchant purchase information from content
+ */
+function extractPurchaseInfo(
+  $: ReturnType<typeof loadHtml>,
+  sectionContent: string,
+): ItemPurchaseInfo[] {
+  const purchases: ItemPurchaseInfo[] = []
+
+  // Pattern: "purchased from [Merchant] for X Runes" or "sold by [Merchant] at [Location]"
+  const purchasePatterns = [
+    /(?:purchased?|bought?|sold)\s+(?:from|by)\s+(?:the\s+)?([^,]+?)\s+for\s+([\d,]+)\s*runes?/gi,
+    /([^,]+?)\s+(?:merchant|vendor)\s+(?:at|in)\s+([^,]+?)[\s,]+(?:for\s+)?([\d,]+)\s*runes?/gi,
+  ]
+
+  const fullContent = `${sectionContent}\n${$('#wiki-content-block').text()}`
+
+  for (const pattern of purchasePatterns) {
+    let match: RegExpExecArray | null = pattern.exec(fullContent)
+    while (match !== null) {
+      const merchantName = cleanText(match[1])
+      const priceStr = match[2] || match[3]
+      const price = parseNumber(priceStr.replace(/,/g, '')) || 0
+
+      if (merchantName && price > 0) {
+        // Avoid duplicates
+        if (!purchases.some((p) => p.merchantName === merchantName)) {
+          purchases.push({
+            merchantName,
+            location: '', // Would need more parsing to extract
+            price,
+          })
+        }
+      }
+      match = pattern.exec(fullContent)
+    }
+  }
+
+  // Also check for stock info: "Stock: X"
+  const stockPattern = /stock:?\s*(\d+)/gi
+  let stockMatch: RegExpExecArray | null = stockPattern.exec(fullContent)
+  while (stockMatch !== null) {
+    const stock = parseNumber(stockMatch[1])
+    // Add stock to last purchase if available
+    if (stock && purchases.length > 0) {
+      const lastPurchase = purchases[purchases.length - 1]
+      purchases[purchases.length - 1] = { ...lastPurchase, stock }
+    }
+    stockMatch = stockPattern.exec(fullContent)
+  }
+
+  return purchases
+}
+
+// ============================================================================
+// CONTENT TYPE DETECTION
+// ============================================================================
+
+/**
+ * Detect if a page is actually an item page regardless of its assigned category
+ *
+ * This catches cases like Stonesword Key being classified as 'location'
+ * when it's actually a Key Item.
+ */
+export function detectActualContentType(
+  html: string,
+  assignedCategory: ContentType,
+): ContentType {
+  const $ = loadHtml(html)
+  const infobox = extractInfobox($)
+  const content = $('#wiki-content-block').text().toLowerCase()
+  const pageTitle = extractPageTitle($)?.toLowerCase() || ''
+
+  // Check infobox type field
+  const infoboxType = (infobox.get('type') || '').toLowerCase()
+
+  // Item type indicators from infobox
+  if (
+    infoboxType.includes('key item') ||
+    infoboxType.includes('consumable') ||
+    infoboxType.includes('crafting material') ||
+    infoboxType.includes('upgrade material') ||
+    infoboxType.includes('material')
+  ) {
+    return 'item'
+  }
+
+  // Content-based item detection (for pages incorrectly assigned)
+  // Only override if currently classified as location or guide
+  if (assignedCategory === 'location' || assignedCategory === 'guide') {
+    // Key Item indicators
+    if (
+      (pageTitle.includes('key') && !pageTitle.includes('keyboard')) ||
+      content.includes('key item') ||
+      (content.includes('breaks the seal') &&
+        content.includes('imp statue')) ||
+      content.includes('used to unlock') ||
+      content.includes('stonesword key')
+    ) {
+      return 'item'
+    }
+
+    // Consumable indicators
+    if (
+      pageTitle.includes('grease') ||
+      pageTitle.includes('pot') ||
+      pageTitle.includes('bolus') ||
+      pageTitle.includes('arrow') ||
+      pageTitle.includes('bolt') ||
+      content.includes('consumable item') ||
+      (content.includes('single use') && content.includes('item'))
+    ) {
+      return 'item'
+    }
+
+    // Material indicators
+    if (
+      pageTitle.includes('smithing stone') ||
+      pageTitle.includes('somber') ||
+      pageTitle.includes('rune arc') ||
+      content.includes('crafting material') ||
+      content.includes('upgrade material')
+    ) {
+      return 'item'
+    }
+  }
+
+  // Keep the assigned category if no override detected
+  return assignedCategory
+}
+
+// ============================================================================
 // UNIFIED PARSER
 // ============================================================================
 
 /**
  * Parse any content type based on the category
+ *
+ * Now includes automatic item detection for misclassified pages
  */
 export function parseContent(
   html: string,
   url: string,
   category: ContentType,
 ): ParseResult<ParsedContent> {
-  switch (category) {
+  // Auto-detect if this should actually be an item
+  const actualCategory = detectActualContentType(html, category)
+
+  switch (actualCategory) {
     case 'boss':
       return parseBoss(html, url)
     case 'weapon':
@@ -2365,6 +2671,8 @@ export function parseContent(
       return parseLocation(html, url)
     case 'expedition':
       return parseExpedition(html, url)
+    case 'item':
+      return parseItem(html, url)
     default:
       return {
         success: false,
@@ -2382,6 +2690,7 @@ export type {
   ParsedContent,
   ParsedEnemy,
   ParsedExpedition,
+  ParsedItem,
   ParsedLocation,
   ParsedMerchant,
   ParsedNightfarer,
