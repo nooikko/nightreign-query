@@ -24,8 +24,8 @@ module.exports = {
     },
     {
       name: 'nightreign-scraper',
-      script: 'apps/scraper/dist/index.js',
-      cwd: __dirname,
+      script: 'dist/index.js',
+      cwd: __dirname + '/apps/scraper',
       instances: 1,
       exec_mode: 'fork',
       watch: false,
@@ -34,9 +34,9 @@ module.exports = {
       env_production: {
         NODE_ENV: 'production',
       },
-      error_file: 'logs/scraper-error.log',
-      out_file: 'logs/scraper-out.log',
-      log_file: 'logs/scraper-combined.log',
+      error_file: '../../logs/scraper-error.log',
+      out_file: '../../logs/scraper-out.log',
+      log_file: '../../logs/scraper-combined.log',
       time: true,
     },
   ],

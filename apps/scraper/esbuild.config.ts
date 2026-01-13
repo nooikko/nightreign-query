@@ -80,18 +80,13 @@ const buildOptions: esbuild.BuildOptions = {
   format: 'esm',
   outdir: 'dist',
   sourcemap: true,
-  // Mark node_modules as external, but bundle workspace packages
+  // Packages with native binaries can't be bundled
   external: [
-    '@anthropic-ai/sdk',
-    '@huggingface/transformers',
-    '@orama/orama',
-    '@orama/plugin-data-persistence',
-    '@prisma/client',
-    'cheerio',
-    'dotenv',
-    'p-limit',
     'playwright',
-    'zod',
+    '@prisma/client',
+    '@huggingface/transformers', // Uses onnxruntime-node (native)
+    'onnxruntime-node',
+    'sharp',
   ],
   // Resolve .ts files without needing extensions in imports
   resolveExtensions: ['.ts', '.tsx', '.js', '.jsx', '.json'],
