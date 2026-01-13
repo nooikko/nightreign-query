@@ -702,6 +702,7 @@ export const NormalizedItemSchema = z.object({
       'Item category: Key Item, Consumable, Crafting Material, Upgrade Material, etc.',
     ),
   effect: z.string().describe('What the item does or its purpose'),
+  description: z.string().describe('Flavor text and lore description'),
   locations: z
     .array(z.string())
     .describe('Where to find this item (all known locations)'),

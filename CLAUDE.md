@@ -33,7 +33,7 @@ pnpm scrape:all             # Scrape all categories from Fextralife
 # Direct scraper commands (from apps/scraper)
 pnpm --filter scraper start scrape <category>    # Scrape: bosses, weapons, relics, etc.
 pnpm --filter scraper start parse:all            # Parse HTML to structured JSON
-pnpm --filter scraper start normalize:all        # Normalize with Claude API
+pnpm --filter scraper start normalize:all        # Normalize parsed data (local, no API)
 pnpm --filter scraper start import               # Import to SQLite
 pnpm --filter scraper start index                # Build Orama search index
 ```
@@ -57,9 +57,11 @@ pnpm turbo type-check --filter=@nightreign/web   # Type check single package
 ### Data Flow
 1. **Scraper** fetches HTML from Fextralife → cached in `apps/scraper/cache/html/`
 2. **Parser** extracts structured data via Cheerio
-3. **Normalizer** uses Claude API to standardize data → `apps/scraper/cache/normalized/`
+3. **Normalizer** transforms parsed data using deterministic rules → `apps/scraper/cache/normalized/`
 4. **Import** writes to SQLite via Prisma
 5. **Indexer** generates embeddings (bge-small-en-v1.5) and builds Orama index
+
+Note: Normalization is entirely local/deterministic. The Claude API is NOT used for normalization.
 
 ### Search Architecture
 - **Embeddings**: `@huggingface/transformers` with BAAI/bge-small-en-v1.5 (384 dimensions)
@@ -92,7 +94,7 @@ GROQ_API_KEY=              # Optional: for LLM-formatted responses
 
 **apps/scraper/.env**
 ```
-ANTHROPIC_API_KEY=         # Required: for Claude normalization
+# ANTHROPIC_API_KEY=       # No longer needed - normalization is fully local
 ```
 
 **packages/database/.env**

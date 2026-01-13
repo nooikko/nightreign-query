@@ -14,11 +14,8 @@ import {
   createNormalizedCache,
   SCHEMA_VERSION,
 } from '@normalizer/cache'
-import { createNormalizer } from '@normalizer/claude'
-import {
-  normalizeDirect,
-  supportsDirectNormalization,
-} from '@normalizer/direct'
+import type { NormalizedContent } from '@normalizer/claude'
+import { normalizeDirect } from '@normalizer/direct'
 import { parseContent } from '@normalizer/parser'
 import type { ParsedContent } from '@normalizer/types'
 import { createCrawler, type CrawlProgress } from '@scraper/crawler'
@@ -49,8 +46,8 @@ const COMMANDS = {
   'parse:all': 'Parse all cached HTML pages for a category',
   'cache:stats': 'Show cache statistics',
   'cache:clear': 'Clear the HTML cache',
-  normalize: 'Normalize scraped data using Claude API',
-  'normalize:all': 'Normalize all scraped data for a category using Claude',
+  normalize: 'Normalize scraped data (deterministic, no API)',
+  'normalize:all': 'Normalize all scraped data for a category',
   embed: 'Generate embeddings for text (test command)',
   'embed:test': 'Test embedding generation with sample texts',
   import: 'Import normalized data into SQLite database',
@@ -584,25 +581,11 @@ async function handleNormalize(args: string[]): Promise<void> {
     for (const cat of Object.keys(CATEGORY_URLS)) {
       console.log(`  ${cat}`)
     }
-    console.log('')
-    console.log('Environment:')
-    console.log('  ANTHROPIC_API_KEY must be set')
     process.exit(1)
   }
 
   if (!(category in CATEGORY_URLS)) {
     console.error(`Error: Unknown category "${category}"`)
-    process.exit(1)
-  }
-
-  // Check for API key
-  if (!process.env.ANTHROPIC_API_KEY) {
-    console.error('Error: ANTHROPIC_API_KEY environment variable is not set')
-    console.log('')
-    console.log('Set your Anthropic API key:')
-    console.log('  export ANTHROPIC_API_KEY=<your-api-key>')
-    console.log('')
-    console.log('Get your API key at https://console.anthropic.com/')
     process.exit(1)
   }
 
@@ -613,7 +596,6 @@ async function handleNormalize(args: string[]): Promise<void> {
     },
   })
 
-  const normalizer = createNormalizer()
   const normalizedCache = createNormalizedCache()
 
   try {
@@ -700,49 +682,18 @@ async function handleNormalize(args: string[]): Promise<void> {
     console.log(`Items to normalize: ${itemsToNormalize.length}`)
     console.log('')
 
-    // Determine if we can use direct normalization
-    const useDirect = supportsDirectNormalization(contentType)
-
-    if (useDirect) {
-      console.log('Step 2: Normalizing directly (no Claude API)...')
-      console.log('  Mode: Deterministic')
-      console.log('')
-    } else {
-      console.log('Step 2: Normalizing with Claude API...')
-      console.log('  Model: claude-3-5-haiku-20241022')
-      console.log('  Rate limit: 2 req/sec, 5 concurrent')
-      console.log('')
-    }
+    console.log('Step 2: Normalizing directly (no API required)...')
+    console.log('  Mode: Deterministic')
+    console.log('')
 
     const startTime = Date.now()
     let normalizeSuccess = 0
     let normalizeError = 0
-    let directCount = 0
-    let claudeCount = 0
 
     // Process items one at a time to store results immediately
     let completed = 0
     for (const item of itemsToNormalize) {
-      let result: { success: true; data: unknown; chunks: unknown[] } | { success: false; error: string }
-
-      // Try direct normalization first for supported types
-      if (useDirect) {
-        const directResult = normalizeDirect(item.parsed)
-        if (directResult.success) {
-          result = directResult as typeof result
-          directCount++
-        } else if (directResult.needsClaude) {
-          // Fall back to Claude
-          result = await normalizer.normalize(item.parsed)
-          claudeCount++
-        } else {
-          result = directResult
-        }
-      } else {
-        // Use Claude for unsupported types
-        result = await normalizer.normalize(item.parsed)
-        claudeCount++
-      }
+      const result = normalizeDirect(item.parsed)
 
       completed++
 
@@ -757,21 +708,16 @@ async function handleNormalize(args: string[]): Promise<void> {
         normalizedCache.set(
           item.url,
           contentType,
-          result.data as import('@normalizer/claude').NormalizedContent,
+          result.data as NormalizedContent,
           result.chunks as import('@normalizer/schemas').ContentChunk[],
           item.html,
-          useDirect && directCount > claudeCount ? 'direct' : 'claude-3-5-haiku-20241022',
+          'direct',
         )
       } else {
         normalizeError++
         // Record failure
         normalizedCache.setFailed(item.url, contentType, item.html, result.error)
         console.log(`\n  [FAIL] ${item.parsed.name}: ${result.error}`)
-      }
-
-      // Only add delay for Claude API calls
-      if (!useDirect || claudeCount > directCount - 1) {
-        await new Promise((resolve) => setTimeout(resolve, 50))
       }
     }
 
@@ -786,10 +732,6 @@ async function handleNormalize(args: string[]): Promise<void> {
     console.log(`  Total items in category: ${parsedItems.length}`)
     console.log(`  Already cached (skipped): ${skippedFromCache}`)
     console.log(`  Normalized this run: ${normalizeSuccess}`)
-    if (directCount > 0 || claudeCount > 0) {
-      console.log(`    - Direct (no API): ${directCount}`)
-      console.log(`    - Claude API: ${claudeCount}`)
-    }
     console.log(`  Errors this run: ${normalizeError}`)
     console.log('')
 
