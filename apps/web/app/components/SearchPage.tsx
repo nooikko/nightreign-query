@@ -1,10 +1,11 @@
 'use client'
 
-import type { SearchResult } from '@nightreign/types'
+import type { FeedbackSession, SearchResult } from '@nightreign/types'
 import { useCallback, useRef, useState } from 'react'
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts'
 import { Results } from './Results'
 import { SearchBar, type SearchBarRef } from './SearchBar'
+import { SessionControls } from './SessionControls'
 
 /**
  * SearchPage Component
@@ -33,6 +34,8 @@ export function SearchPage() {
   const [error, setError] = useState<Error | undefined>(undefined)
   const [currentQuery, setCurrentQuery] = useState<string>('')
   const [isFormatted, setIsFormatted] = useState(false)
+  const [typeFilter, setTypeFilter] = useState<string | undefined>(undefined)
+  const [feedbackSession, setFeedbackSession] = useState<FeedbackSession | null>(null)
 
   // Set up keyboard shortcuts
   useKeyboardShortcuts({
@@ -95,6 +98,10 @@ export function SearchPage() {
             Local-first semantic search for Elden Ring Nightreign. Ask questions
             in natural language or search for specific content.
           </p>
+          {/* Session controls for grouping feedback */}
+          <div className="flex justify-center pt-2">
+            <SessionControls onSessionChange={setFeedbackSession} />
+          </div>
         </div>
 
         {/* Search Bar */}
@@ -111,9 +118,11 @@ export function SearchPage() {
           results={results}
           isFormatted={isFormatted}
           query={currentQuery}
+          typeFilter={typeFilter}
           isLoading={isLoading}
           error={error}
           onRetry={handleRetry}
+          sessionId={feedbackSession?.id}
         />
       </main>
     </div>

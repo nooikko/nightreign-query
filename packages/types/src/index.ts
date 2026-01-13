@@ -214,6 +214,137 @@ export interface ContentMetadata {
   readonly [key: string]: unknown
 }
 
+// ============================================================================
+// FEEDBACK SYSTEM TYPES
+// ============================================================================
+
+/**
+ * Feedback submission for a search response
+ *
+ * Sent from the client when user provides thumbs up/down
+ */
+export interface FeedbackSubmission {
+  /**
+   * Optional session ID to group feedback from a game run
+   */
+  readonly sessionId?: string
+
+  /**
+   * The search query that was submitted
+   */
+  readonly query: string
+
+  /**
+   * Filter type used (boss, weapon, etc.) if any
+   */
+  readonly queryType?: ContentType
+
+  /**
+   * The response content being rated
+   */
+  readonly response: string
+
+  /**
+   * ID of specific result if rating individual result
+   */
+  readonly responseId?: string
+
+  /**
+   * Whether the response was helpful (true = thumbs up, false = thumbs down)
+   */
+  readonly helpful: boolean
+
+  /**
+   * Optional: Why the response was or wasn't helpful
+   */
+  readonly reason?: string
+
+  /**
+   * Optional: What the user expected to see instead
+   */
+  readonly expected?: string
+
+  /**
+   * Response latency in milliseconds (for performance tracking)
+   */
+  readonly latencyMs?: number
+}
+
+/**
+ * Response from feedback submission API
+ */
+export interface FeedbackResponse {
+  /**
+   * Whether the feedback was saved successfully
+   */
+  readonly success: boolean
+
+  /**
+   * ID of the created feedback entry
+   */
+  readonly feedbackId?: string
+
+  /**
+   * Error message if submission failed
+   */
+  readonly error?: string
+}
+
+/**
+ * A feedback session for grouping feedback from a game run
+ */
+export interface FeedbackSession {
+  /**
+   * Unique session ID
+   */
+  readonly id: string
+
+  /**
+   * Optional descriptive name (e.g., "Night 3 Training Run")
+   */
+  readonly name?: string
+
+  /**
+   * When the session started
+   */
+  readonly startedAt: string
+
+  /**
+   * When the session ended (null if still active)
+   */
+  readonly endedAt?: string
+
+  /**
+   * Session-level notes
+   */
+  readonly notes?: string
+}
+
+/**
+ * Request to start a new feedback session
+ */
+export interface StartSessionRequest {
+  /**
+   * Optional name for the session
+   */
+  readonly name?: string
+}
+
+/**
+ * Request to end a feedback session
+ */
+export interface EndSessionRequest {
+  /**
+   * The session ID to end
+   */
+  readonly sessionId: string
+
+  /**
+   * Optional notes about the session
+   */
+  readonly notes?: string
+}
+
 /**
  * Normalized content format for ingestion pipeline
  *

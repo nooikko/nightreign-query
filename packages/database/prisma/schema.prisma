@@ -221,3 +221,47 @@ model ContentChunk {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+// ============================================================================
+// FEEDBACK SYSTEM
+// ============================================================================
+
+/// A feedback session groups multiple feedback entries from a single game run
+model FeedbackSession {
+  id        String     @id @default(cuid())
+  name      String?    // Optional name like "Night 3 Training Run"
+  startedAt DateTime   @default(now())
+  endedAt   DateTime?
+  notes     String?    // Session-level notes
+  feedback  Feedback[]
+
+  @@index([startedAt])
+}
+
+/// Individual feedback on a search response
+model Feedback {
+  id          String           @id @default(cuid())
+  sessionId   String?          // Optional session grouping
+  session     FeedbackSession? @relation(fields: [sessionId], references: [id])
+
+  // What was searched
+  query       String           // The search query
+  queryType   String?          // Filter type used (boss, weapon, etc.)
+
+  // The response
+  responseId  String?          // ID of specific result if rating individual result
+  response    String           // The AI-formatted response or result content
+
+  // Feedback
+  helpful     Boolean          // true = thumbs up, false = thumbs down
+  reason      String?          // Why it was/wasn't helpful
+  expected    String?          // What the user expected to see
+
+  // Metadata
+  latencyMs   Int?             // Response time in milliseconds
+  createdAt   DateTime         @default(now())
+
+  @@index([sessionId])
+  @@index([helpful, createdAt])
+  @@index([query])
+}

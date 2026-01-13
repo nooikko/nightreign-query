@@ -2,6 +2,7 @@
 
 import type {
   ContentChunk,
+  ContentType,
   SearchResult,
   SearchTiming,
 } from '@nightreign/types'
@@ -9,6 +10,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { ResultCard } from './ResultCard'
+import { FeedbackButtons } from './FeedbackButtons'
 
 /**
  * SSE event types from the streaming API
@@ -96,6 +98,11 @@ interface ResultsProps {
    * Callback to retry the search
    */
   readonly onRetry?: () => void
+
+  /**
+   * Optional session ID for grouping feedback
+   */
+  readonly sessionId?: string
 }
 
 /**
@@ -140,6 +147,7 @@ export function Results({
   isLoading = false,
   error,
   onRetry,
+  sessionId,
 }: ResultsProps) {
   // Streaming state
   const [streamedContent, setStreamedContent] = useState<string>('')
@@ -502,6 +510,17 @@ export function Results({
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {streamedContent}
             </ReactMarkdown>
+
+            {/* Feedback buttons - shown after streaming completes */}
+            {!isStreaming && query && (
+              <FeedbackButtons
+                query={query}
+                queryType={typeFilter as ContentType | undefined}
+                response={streamedContent}
+                latencyMs={streamTiming?.total}
+                sessionId={sessionId}
+              />
+            )}
           </article>
         )}
 
@@ -544,6 +563,17 @@ export function Results({
           aria-label="Formatted search response"
         >
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{formatted}</ReactMarkdown>
+
+          {/* Feedback buttons */}
+          {query && (
+            <FeedbackButtons
+              query={query}
+              queryType={typeFilter as ContentType | undefined}
+              response={formatted}
+              latencyMs={results.timing?.total}
+              sessionId={sessionId}
+            />
+          )}
         </article>
 
         {/* Timing information */}
