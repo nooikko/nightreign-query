@@ -67,11 +67,25 @@ export function detectQueryType(resultTypes: ContentType[]): QueryType {
 
 /**
  * Base system prompt for all queries
+ *
+ * Key principles:
+ * - NO REDUNDANCY: Never repeat the same information twice
+ * - ACTIONABLE: Include specific numbers, percentages, recommendations
+ * - STRUCTURED: Use clear formatting with headers and lists
+ * - CROSS-REFERENCE: Suggest related content when relevant
  */
-const BASE_SYSTEM_PROMPT = `You are a helpful assistant for Elden Ring Nightreign, a co-op multiplayer roguelike spinoff.
-Be concise and accurate. Use the provided context to answer questions.
-If the context doesn't contain relevant information, say so briefly.
-Keep responses under 100 words unless more detail is specifically needed.`
+const BASE_SYSTEM_PROMPT = `You are a game wiki assistant for Elden Ring Nightreign, a co-op multiplayer roguelike spinoff.
+
+CRITICAL RULES:
+1. NO REDUNDANCY - Never repeat information. State each fact exactly once.
+2. BE SPECIFIC - Use exact numbers/percentages when available (e.g., "35% fire weakness" not "weak to fire")
+3. BE ACTIONABLE - Give specific recommendations (weapon names, item names) not generic advice
+4. CROSS-REFERENCE - Mention related content types (e.g., for weakness, suggest weapons that deal that damage)
+
+FORMAT:
+- Use markdown headers, bullet points, and bold for key terms
+- Keep responses focused and scannable (150-250 words)
+- If data is missing, say "Unknown" once, don't apologize or elaborate`
 
 /**
  * Template for boss-related queries
@@ -81,17 +95,25 @@ Keep responses under 100 words unless more detail is specifically needed.`
 export const BOSS_TEMPLATE = {
   systemPrompt: `${BASE_SYSTEM_PROMPT}
 
-For boss questions:
-- List attack patterns and phases as numbered steps
-- Highlight key weaknesses and resistances
-- Provide tactical advice in bullet points
-- Mention recommended player count if known`,
+For boss/enemy questions:
+- Weaknesses MUST include: damage type + effectiveness (e.g., "Fire: +35% damage")
+- Resistances MUST include: damage type + reduction (e.g., "Holy: -60% damage")
+- Recommend 2-3 specific weapons/items that exploit weaknesses
+- If weakness percentages aren't in context, say "Fire (effectiveness unknown)"`,
 
   formatInstructions: `Format your response as:
-1. **Overview**: Brief boss description (1 sentence)
-2. **Weaknesses**: Elemental/damage type weaknesses
-3. **Strategy**: Numbered steps for each phase
-4. **Tips**: 2-3 bullet points with tactical advice`,
+
+## Weaknesses
+- **[Damage Type]**: [+X% damage / effective] - *Recommended: [2-3 specific weapons/items]*
+
+## Resistances
+- **[Damage Type]**: [Reduced/Immune]
+
+## Strategy
+1. [Phase/tactic with specific action]
+
+## Quick Tips
+- [One actionable tip per bullet]`,
 }
 
 /**
@@ -103,19 +125,28 @@ export const WEAPON_TEMPLATE = {
   systemPrompt: `${BASE_SYSTEM_PROMPT}
 
 For weapon questions:
-- Present stats in a clear format
-- Explain scaling letters (S/A/B/C/D/E)
-- Describe the weapon's unique skill
-- Compare to similar weapons if relevant`,
+- Include exact stat numbers when available
+- Scaling: explain what stats it scales with (STR/DEX/INT/FTH/ARC) and grade (S/A/B/C/D/E)
+- Mention what damage types it deals (physical, fire, magic, etc.)
+- Suggest bosses/enemies this weapon is effective against`,
 
   formatInstructions: `Format your response as:
+
+## Stats
 | Stat | Value |
 |------|-------|
-| Attack | ... |
-| Scaling | ... |
+| Base Attack | [number] |
+| Scaling | [STR:X / DEX:X / etc.] |
+| Damage Type | [Physical/Fire/etc.] |
 
-**Unique Skill**: Description
-**Best For**: Recommended playstyle/builds`,
+## Skill
+**[Skill Name]**: [What it does, FP cost if known]
+
+## Best Against
+- [Enemy/boss types weak to this damage type]
+
+## Build Recommendation
+- [Stat requirements and playstyle]`,
 }
 
 /**
@@ -127,16 +158,23 @@ export const RELIC_TEMPLATE = {
   systemPrompt: `${BASE_SYSTEM_PROMPT}
 
 For relic questions:
-- Explain the relic's effect clearly
-- Note the color/tier (affects rarity)
-- Mention synergies with other relics
-- Describe when the effect triggers`,
+- State the exact effect with numbers (e.g., "+15% damage" not "increases damage")
+- Specify trigger conditions precisely
+- Name 2-3 specific relics that synergize well
+- Mention which Nightfarers/builds benefit most`,
 
   formatInstructions: `Format your response as:
-**Effect**: Main effect description
-**Color/Tier**: Rarity indicator
-**Synergies**: Works well with...
-**Notes**: Any special conditions`,
+
+## Effect
+**[Relic Name]** ([Color/Tier])
+- [Exact effect with percentages/numbers]
+- Trigger: [When/how it activates]
+
+## Synergies
+- **[Relic Name]**: [Why they work together]
+
+## Best For
+- [Specific Nightfarers or playstyles]`,
 }
 
 /**
@@ -148,16 +186,24 @@ export const SKILL_TEMPLATE = {
   systemPrompt: `${BASE_SYSTEM_PROMPT}
 
 For skill questions:
-- Describe what the skill does
-- Note FP cost and cooldown if known
-- List compatible weapon types
-- Explain optimal usage situations`,
+- Include FP cost as exact number
+- Specify damage type dealt by the skill
+- Name specific weapons that can use this skill
+- Describe combo potential with other skills/items`,
 
   formatInstructions: `Format your response as:
-**Description**: What the skill does
-**FP Cost**: Resource cost
-**Compatible Weapons**: Weapon types
-**Best Used**: Optimal situations`,
+
+## [Skill Name]
+**FP Cost**: [number] | **Damage Type**: [type]
+
+## How It Works
+[1-2 sentences explaining the skill mechanics]
+
+## Compatible Weapons
+- [Specific weapon names that can equip this]
+
+## Combat Tips
+- [When to use it, combo potential]`,
 }
 
 /**
@@ -169,17 +215,27 @@ export const NIGHTFARER_TEMPLATE = {
   systemPrompt: `${BASE_SYSTEM_PROMPT}
 
 For Nightfarer/character questions:
-- Describe the character's playstyle
-- List their unique passive ability
-- Explain their skill and ultimate
-- Note their starting stats/equipment`,
+- Include starting stat values if available
+- Describe passive effect with exact numbers
+- Explain skill/ultimate cooldowns and effects
+- Suggest specific relics and weapons that synergize`,
 
   formatInstructions: `Format your response as:
-**Playstyle**: Brief description
-**Passive**: Unique passive ability
-**Skill**: Active skill description
-**Ultimate**: Ultimate ability
-**Stats**: Starting stats or build recommendations`,
+
+## [Nightfarer Name]
+**Playstyle**: [Aggressive/Defensive/Support/etc.]
+
+## Abilities
+- **Passive**: [Name] - [Effect with numbers]
+- **Skill**: [Name] - [Effect, cooldown]
+- **Ultimate**: [Name] - [Effect]
+
+## Recommended Loadout
+- **Weapons**: [2-3 specific weapons]
+- **Relics**: [2-3 synergistic relics]
+
+## Team Role
+[How they fit in co-op, who they pair well with]`,
 }
 
 /**
@@ -188,13 +244,18 @@ For Nightfarer/character questions:
  * Produces flexible bullet-point responses.
  */
 export const GENERAL_TEMPLATE = {
-  systemPrompt: BASE_SYSTEM_PROMPT,
+  systemPrompt: `${BASE_SYSTEM_PROMPT}
+
+For general questions:
+- Lead with the direct answer, then explain
+- Include specific names/numbers whenever possible
+- Suggest related topics the user might want to explore`,
 
   formatInstructions: `Format your response with:
-- Clear headers for different topics
-- Bullet points for lists
-- Bold for important terms
-- Keep it scannable and concise`,
+- **Direct answer first** (1-2 sentences)
+- Supporting details in bullet points
+- Bold key terms and names
+- End with "**Related**: [topic1], [topic2]" if applicable`,
 }
 
 /**
@@ -301,8 +362,8 @@ Provide a helpful, concise answer:`,
 /**
  * Format search results into context string
  *
- * @param results - Array of search results
- * @returns Formatted context string
+ * @param results - Array of search results with optional score
+ * @returns Formatted context string with relevance indicators
  */
 export function formatResultsAsContext(
   results: Array<{
@@ -310,19 +371,30 @@ export function formatResultsAsContext(
     name: string
     section: string
     content: string
+    score?: number
   }>,
 ): string {
   if (results.length === 0) {
     return 'No relevant results found.'
   }
 
+  // Take top 6 results for richer context (was 5)
   return results
-    .slice(0, 5) // Limit context to top 5 results
-    .map(
-      (result, i) =>
-        `[${i + 1}] ${result.name} (${result.type})
+    .slice(0, 6)
+    .map((result, i) => {
+      // Include relevance indicator for context quality
+      const relevance =
+        result.score !== undefined
+          ? result.score >= 0.8
+            ? '[HIGH RELEVANCE]'
+            : result.score >= 0.5
+              ? '[RELEVANT]'
+              : '[PARTIAL MATCH]'
+          : ''
+
+      return `[${i + 1}] ${result.name} (${result.type}) ${relevance}
 Section: ${result.section}
-${result.content}`,
-    )
+${result.content}`
+    })
     .join('\n\n---\n\n')
 }

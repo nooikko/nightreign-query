@@ -322,11 +322,12 @@ export async function POST(request: NextRequest) {
 
           if (useGroq && searchResults.length > 0) {
             // Stream from Groq LLM with abort signal for cancellation
+            // maxTokens increased to 350 for richer, more actionable responses
             const groqStream = createStreamingCompletion({
               systemPrompt,
               userMessage,
-              maxTokens: 200,
-              temperature: 0.7,
+              maxTokens: 350,
+              temperature: 0.6, // Slightly lower for more consistent formatting
               signal: abortController.signal,
             })
 

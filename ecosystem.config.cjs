@@ -25,7 +25,7 @@ module.exports = {
     {
       name: 'nightreign-scraper',
       script: 'dist/index.js',
-      cwd: __dirname + '/apps/scraper',
+      cwd: `${__dirname}/apps/scraper`,
       instances: 1,
       exec_mode: 'fork',
       watch: false,
