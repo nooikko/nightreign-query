@@ -13,7 +13,8 @@
     "db:migrate": "turbo run db:migrate",
     "db:studio": "turbo run db:studio",
     "scrape": "turbo run scrape --filter=scraper",
-    "scrape:all": "pnpm --filter scraper run scrape:all"
+    "scrape:all": "pnpm --filter scraper run scrape:all",
+    "download:models": "tsx scripts/download-models.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",

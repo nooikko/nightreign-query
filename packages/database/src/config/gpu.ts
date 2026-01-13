@@ -6,6 +6,12 @@
  */
 
 import { env } from '@huggingface/transformers'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+// Resolve cache directory relative to this package
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const MODELS_CACHE_DIR = path.resolve(__dirname, '../../../..', '.cache', 'models')
 
 /** Supported device types for embedding generation */
 export type DeviceType = 'cpu' | 'cuda'
@@ -132,10 +138,14 @@ export function getGpuConfig(): GpuConfig {
 export function configureTransformersEnv(): void {
   const config = getGpuConfig()
 
+  // Set explicit cache directory for consistent model location
+  env.cacheDir = MODELS_CACHE_DIR
+  env.allowLocalModels = true
+
   // Disable remote model downloads in production (use cached models)
   if (process.env.NODE_ENV === 'production') {
-    env.allowLocalModels = true
     env.allowRemoteModels = false
+    console.log(`[GPU Config] Using cached models from: ${MODELS_CACHE_DIR}`)
   }
 
   // Log configuration

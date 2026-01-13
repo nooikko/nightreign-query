@@ -73,6 +73,10 @@ fi
 log_info "Building all packages..."
 pnpm build
 
+# Download embedding models to cache
+log_info "Downloading embedding models for production..."
+npx tsx scripts/download-models.ts
+
 # Copy static files for standalone output
 if [ -d "apps/web/.next/standalone" ]; then
     log_info "Copying static assets..."
