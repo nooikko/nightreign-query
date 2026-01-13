@@ -4,7 +4,7 @@ module.exports = {
       name: 'nightreign-web',
       script: 'apps/web/.next/standalone/apps/web/server.js',
       cwd: __dirname,
-      instances: 'max',
+      instances: 4,
       exec_mode: 'cluster',
       watch: false,
       max_memory_restart: '1G',
