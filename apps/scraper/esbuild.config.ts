@@ -80,8 +80,19 @@ const buildOptions: esbuild.BuildOptions = {
   format: 'esm',
   outdir: 'dist',
   sourcemap: true,
-  // Mark all node_modules as external (don't bundle them)
-  packages: 'external',
+  // Mark node_modules as external, but bundle workspace packages
+  external: [
+    '@anthropic-ai/sdk',
+    '@huggingface/transformers',
+    '@orama/orama',
+    '@orama/plugin-data-persistence',
+    '@prisma/client',
+    'cheerio',
+    'dotenv',
+    'p-limit',
+    'playwright',
+    'zod',
+  ],
   // Resolve .ts files without needing extensions in imports
   resolveExtensions: ['.ts', '.tsx', '.js', '.jsx', '.json'],
   plugins: [tsconfigPathsPlugin()],
