@@ -11,6 +11,9 @@ module.exports = {
       env_production: {
         NODE_ENV: 'production',
         PORT: 3000,
+        // CUDA/cuDNN library paths for ONNX Runtime GPU support
+        CUDA_PATH: '/usr/local/cuda',
+        LD_LIBRARY_PATH: '/usr/local/cuda/lib64:/usr/lib/x86_64-linux-gnu',
       },
       env_development: {
         NODE_ENV: 'development',

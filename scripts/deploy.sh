@@ -53,6 +53,20 @@ deploy_web() {
         log_info "Copying static assets..."
         cp -r apps/web/.next/static apps/web/.next/standalone/apps/web/.next/static
         cp -r apps/web/public apps/web/.next/standalone/apps/web/public 2>/dev/null || true
+
+        # Copy HuggingFace model cache to standalone (required for GPU/embedding models)
+        if [ -d ".cache" ]; then
+            log_info "Copying HuggingFace model cache..."
+            cp -r .cache apps/web/.next/standalone/
+            # Create symlink for backward compatibility (models/ → .cache/)
+            ln -sf .cache apps/web/.next/standalone/models 2>/dev/null || true
+        fi
+
+        # Copy Orama search index to standalone
+        if [ -d "orama-index" ]; then
+            log_info "Copying Orama search index..."
+            cp -r orama-index apps/web/.next/standalone/
+        fi
     fi
 
     log_info "Reloading web application with PM2..."

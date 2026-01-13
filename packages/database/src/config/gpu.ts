@@ -24,12 +24,29 @@ export interface GpuConfig {
 let cachedConfig: GpuConfig | null = null
 
 /**
+ * Check if cuDNN 9 is available (required by ONNX Runtime 1.21+)
+ *
+ * ONNX Runtime 1.21+ requires cuDNN 9.x specifically.
+ * cuDNN 8.x is NOT compatible with ONNX Runtime built for cuDNN 9.x.
+ */
+function checkCudnnAvailable(): boolean {
+  const ldLibraryPath = process.env.LD_LIBRARY_PATH || ''
+
+  // Check for cuDNN 9 in library path
+  // Common locations: /usr/lib/x86_64-linux-gnu, /usr/local/cuda/lib64
+  const hasCudnn = ldLibraryPath.includes('x86_64-linux-gnu') || ldLibraryPath.includes('cudnn')
+
+  return hasCudnn
+}
+
+/**
  * Check if CUDA GPU is likely available
  *
  * This is a heuristic check - actual availability depends on:
  * - NVIDIA GPU present
  * - CUDA toolkit installed
- * - Compatible CUDA version
+ * - Compatible CUDA version (12.x for ONNX Runtime 1.21+)
+ * - cuDNN 9.x installed (required by ONNX Runtime 1.21+)
  */
 function checkCudaAvailable(): boolean {
   // Check for common CUDA environment variables
@@ -42,7 +59,17 @@ function checkCudaAvailable(): boolean {
   // Check if running on Linux (CUDA GPU support in Node.js is Linux-only)
   const isLinux = process.platform === 'linux'
 
-  return isLinux && (!!cudaPath || hasCudaInPath)
+  // Check for cuDNN 9 (required by ONNX Runtime 1.21+)
+  const hasCudnn = checkCudnnAvailable()
+
+  if (isLinux && (cudaPath || hasCudaInPath) && !hasCudnn) {
+    console.warn('[GPU Config] CUDA detected but cuDNN 9 not found in LD_LIBRARY_PATH')
+    console.warn('[GPU Config] ONNX Runtime 1.21+ requires cuDNN 9.x for GPU acceleration')
+    console.warn('[GPU Config] Add cuDNN lib directory to LD_LIBRARY_PATH (e.g., /usr/lib/x86_64-linux-gnu)')
+    return false
+  }
+
+  return isLinux && (!!cudaPath || hasCudaInPath) && hasCudnn
 }
 
 /**
@@ -135,8 +162,10 @@ export function getPipelineOptions(): {
   const config = getGpuConfig()
 
   return {
-    // Use fp16 on GPU for faster inference, fp32 on CPU for accuracy
-    dtype: config.device === 'cuda' ? 'fp16' : 'fp32',
+    // Use fp32 for both CPU and GPU
+    // Note: fp16 requires a separate model download (fp16 variant)
+    // and can cause numerical instability with some models
+    dtype: 'fp32',
     device: config.device,
   }
 }

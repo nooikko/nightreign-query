@@ -7,6 +7,7 @@
  */
 
 import { AutoModelForSequenceClassification, AutoTokenizer } from '@huggingface/transformers'
+import { getGpuConfig, getPipelineOptions } from '../config/gpu'
 
 /** Model to use for reranking */
 const RERANKER_MODEL = 'BAAI/bge-reranker-base'
@@ -68,13 +69,19 @@ export class Reranker {
    * Load the reranker model and tokenizer
    */
   private async loadModel(): Promise<void> {
+    const gpuConfig = getGpuConfig()
+    const pipelineOptions = getPipelineOptions()
+
     console.log(`Loading reranker model: ${RERANKER_MODEL}...`)
+    console.log(`[Reranker] Device: ${gpuConfig.device}, dtype: ${pipelineOptions.dtype}`)
     const startTime = Date.now()
 
     // Load model and tokenizer in parallel
+    // Uses same device (CPU/CUDA) as embedding model for consistency
     const [model, tokenizer] = await Promise.all([
       AutoModelForSequenceClassification.from_pretrained(RERANKER_MODEL, {
-        dtype: 'fp32',
+        dtype: pipelineOptions.dtype,
+        device: gpuConfig.device,
       }),
       AutoTokenizer.from_pretrained(RERANKER_MODEL),
     ])
