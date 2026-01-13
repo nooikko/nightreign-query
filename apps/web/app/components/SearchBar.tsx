@@ -22,6 +22,7 @@ const CONTENT_TYPES: ReadonlyArray<{ value: ContentType; label: string }> = [
   { value: 'nightfarer', label: 'Nightfarer' },
   { value: 'skill', label: 'Skill' },
   { value: 'talisman', label: 'Talisman' },
+  { value: 'item', label: 'Item' },
   { value: 'guide', label: 'Guide' },
 ] as const
 

@@ -187,6 +187,18 @@ model Expedition {
   embedding        Bytes?
 }
 
+model Item {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  category    String  // Key Item, Consumable, Crafting Material, Upgrade Material, etc.
+  effect      String  // What the item does
+  description String  // Flavor text/lore
+  locations   Json    // string[] - where to find it
+  uses        Int?    // Number of uses (null for unlimited/key items)
+  tags        Json    // string[]
+  embedding   Bytes?
+}
+
 model ContentChunk {
   id        String   @id @default(cuid())
   type      String

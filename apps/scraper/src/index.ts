@@ -1326,6 +1326,21 @@ async function handleIndex(): Promise<void> {
   let indexed = 0
   let errors = 0
 
+  // Helper to safely join arrays, filtering empty values
+  const safeJoin = (arr: string[] | null | undefined, fallback = 'None listed'): string => {
+    const filtered = (arr || []).filter(s => s?.trim())
+    return filtered.length > 0 ? filtered.join(', ') : fallback
+  }
+
+  // Helper to conditionally include a field with prefix
+  const withPrefix = (prefix: string, value: string | null | undefined, fallback?: string): string => {
+    const trimmed = (value || '').trim()
+    if (!trimmed || trimmed === 'Unknown') {
+      return fallback ? `${prefix}${fallback}` : ''
+    }
+    return `${prefix}${trimmed}`
+  }
+
   // Helper to create searchable content and add to index
   async function indexItems<T extends { name: string }>(
     type: string,
@@ -1580,7 +1595,7 @@ async function handleIndex(): Promise<void> {
   await indexItems(
     'skill',
     skills,
-    (s) => `${s.name} costs ${s.fpCost} FP. ${s.effect}. Compatible with: ${(s.weaponTypes as string[]).join(', ')}`,
+    (s) => `${s.name} costs ${s.fpCost} FP. ${s.effect} Compatible with: ${safeJoin(s.weaponTypes as string[])}`,
     (s) => ['skill', ...(s.tags as string[] || [])]
   )
 
@@ -1589,7 +1604,7 @@ async function handleIndex(): Promise<void> {
   await indexItems(
     'talisman',
     talismans,
-    (t) => `${t.name} talisman. ${t.effect}. Found at: ${t.location}`,
+    (t) => `${t.name} talisman. ${t.effect}${withPrefix(' Found at: ', t.location)}`,
     (t) => ['talisman', ...(t.tags as string[] || [])]
   )
 
@@ -1625,7 +1640,7 @@ async function handleIndex(): Promise<void> {
   await indexItems(
     'enemy',
     enemies,
-    (e) => `${e.name} is a ${e.category} enemy. ${e.strategies} Weaknesses: ${(e.weaknesses as string[]).join(', ')}. Drops: ${(e.drops as string[]).join(', ')}`,
+    (e) => `${e.name} is a ${e.category} enemy. ${e.strategies} Weaknesses: ${safeJoin(e.weaknesses as string[], 'Unknown')}. Drops: ${safeJoin(e.drops as string[], 'Unknown')}`,
     (e) => ['enemy', e.category.toLowerCase(), ...(e.tags as string[] || [])]
   )
 
@@ -1634,7 +1649,7 @@ async function handleIndex(): Promise<void> {
   await indexItems(
     'npc',
     npcs,
-    (n) => `${n.name} is a ${n.role}. Located at ${n.location}. Services: ${(n.services as string[]).join(', ')}`,
+    (n) => `${n.name} is a ${n.role}.${withPrefix(' Located at ', n.location, 'unknown location')} Services: ${safeJoin(n.services as string[])}`,
     (n) => ['npc', n.role.toLowerCase(), ...(n.tags as string[] || [])]
   )
 
@@ -1643,7 +1658,7 @@ async function handleIndex(): Promise<void> {
   await indexItems(
     'merchant',
     merchants,
-    (m) => `${m.name} merchant at ${m.location}. ${m.inventory}. Notable items: ${(m.notableItems as string[]).join(', ')}`,
+    (m) => `${m.name} merchant${withPrefix(' at ', m.location)}. ${m.inventory} Notable items: ${safeJoin(m.notableItems as string[])}`,
     (m) => ['merchant', ...(m.tags as string[] || [])]
   )
 
@@ -1652,8 +1667,17 @@ async function handleIndex(): Promise<void> {
   await indexItems(
     'location',
     locations,
-    (l) => `${l.name} is in ${l.region}. ${l.description}. Bosses: ${(l.bosses as string[]).join(', ')}. Enemies: ${(l.enemies as string[]).join(', ')}`,
-    (l) => ['location', l.region.toLowerCase(), ...(l.tags as string[] || [])]
+    (l) => {
+      const parts = [l.name]
+      if (l.region?.trim()) parts.push(`is in ${l.region}`)
+      if (l.description?.trim()) parts.push(l.description)
+      const bosses = safeJoin(l.bosses as string[], '')
+      const enemies = safeJoin(l.enemies as string[], '')
+      if (bosses) parts.push(`Bosses: ${bosses}`)
+      if (enemies) parts.push(`Enemies: ${enemies}`)
+      return parts.join('. ')
+    },
+    (l) => ['location', ...(l.region ? [l.region.toLowerCase()] : []), ...(l.tags as string[] || [])]
   )
 
   // Index expeditions
@@ -1661,8 +1685,17 @@ async function handleIndex(): Promise<void> {
   await indexItems(
     'expedition',
     expeditions,
-    (e) => `${e.name} is a ${e.difficulty} expedition. ${e.strategies} Objectives: ${(e.objectives as string[]).join(', ')}. Rewards: ${(e.rewards as string[]).join(', ')}`,
+    (e) => `${e.name} is a ${e.difficulty} expedition. ${e.strategies} Objectives: ${safeJoin(e.objectives as string[])}. Rewards: ${safeJoin(e.rewards as string[])}`,
     (e) => ['expedition', e.difficulty.toLowerCase(), ...(e.tags as string[] || [])]
+  )
+
+  // Index items (consumables, key items, materials)
+  const items = await prisma.item.findMany()
+  await indexItems(
+    'item',
+    items,
+    (i) => `${i.name} is a ${i.category}. ${i.effect}${i.description ? ` ${i.description}` : ''} Locations: ${safeJoin(i.locations as string[], 'Unknown')}`,
+    (i) => ['item', i.category.toLowerCase().replace(/\s+/g, '-'), ...(i.tags as string[] || [])]
   )
 
   // Save the index

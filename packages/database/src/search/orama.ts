@@ -33,6 +33,7 @@ type ContentType =
   | 'merchant'
   | 'location'
   | 'expedition'
+  | 'item'
   | 'guide'
 
 /** Embedding dimensions (matches bge-small-en-v1.5) */

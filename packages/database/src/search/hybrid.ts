@@ -27,6 +27,7 @@ type ContentType =
   | 'merchant'
   | 'location'
   | 'expedition'
+  | 'item'
   | 'guide'
 
 /** Hybrid search query options */

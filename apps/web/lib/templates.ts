@@ -16,6 +16,7 @@ export type QueryType =
   | 'relic'
   | 'skill'
   | 'nightfarer'
+  | 'item'
   | 'general'
 
 /**
@@ -60,6 +61,8 @@ export function detectQueryType(resultTypes: ContentType[]): QueryType {
       return 'skill'
     case 'nightfarer':
       return 'nightfarer'
+    case 'item':
+      return 'item'
     default:
       return 'general'
   }
@@ -239,6 +242,36 @@ For Nightfarer/character questions:
 }
 
 /**
+ * Template for item-related queries
+ *
+ * Produces item information with locations and usage.
+ */
+export const ITEM_TEMPLATE = {
+  systemPrompt: `${BASE_SYSTEM_PROMPT}
+
+For item questions (consumables, key items, materials):
+- Clearly state what the item does and when to use it
+- List ALL known locations where the item can be found
+- Include quantity available at each location if known
+- Mention if the item is limited or can be farmed`,
+
+  formatInstructions: `Format your response as:
+
+## [Item Name]
+**Type**: [Key Item/Consumable/Material] | **Uses**: [number or "Unlimited"]
+
+## Effect
+[What the item does - be specific]
+
+## Locations
+- **[Location Name]**: [How to get it, quantity if known]
+- **[Alternative sources]**: [Drops, purchases, etc.]
+
+## Tips
+- [When to use it, whether to save it, etc.]`,
+}
+
+/**
  * Template for general queries
  *
  * Produces flexible bullet-point responses.
@@ -279,6 +312,8 @@ export function getTemplate(queryType: QueryType): {
       return SKILL_TEMPLATE
     case 'nightfarer':
       return NIGHTFARER_TEMPLATE
+    case 'item':
+      return ITEM_TEMPLATE
     default:
       return GENERAL_TEMPLATE
   }

@@ -42,6 +42,7 @@ const VALID_CONTENT_TYPES = new Set<ContentType>([
   'merchant',
   'location',
   'expedition',
+  'item',
   'guide',
 ])
 
@@ -102,6 +103,7 @@ const SearchQuerySchema = z.object({
             'merchant',
             'location',
             'expedition',
+            'item',
             'guide',
           ]),
         )

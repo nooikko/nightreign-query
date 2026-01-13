@@ -26,6 +26,7 @@ export type ContentType =
   | 'merchant'
   | 'location'
   | 'expedition'
+  | 'item'
   | 'guide'
 
 /**

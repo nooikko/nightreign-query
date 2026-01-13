@@ -24,6 +24,7 @@ type ContentType =
   | 'merchant'
   | 'location'
   | 'expedition'
+  | 'item'
   | 'guide'
 
 /** Options for storage operations */
