@@ -225,8 +225,59 @@ export const WeaponStatusBuildupSchema = z.object({
 })
 
 /**
+ * Nightfarer class enum for weapon upgrade paths
+ */
+export const NightfarerClassSchema = z.enum([
+  'wylder',
+  'guardian',
+  'ironeye',
+  'duchess',
+  'raider',
+  'revenant',
+  'recluse',
+  'executor',
+])
+
+/**
+ * Schema for upgrade stats at a single quality tier
+ */
+export const WeaponUpgradeTierStatsSchema = z.object({
+  atkPwr: z.number().optional().describe('Attack power at this tier'),
+  dmgNeg: z.number().optional().describe('Damage negation at this tier'),
+})
+
+/**
+ * Schema for all quality tiers at a specific upgrade level
+ */
+export const WeaponUpgradeLevelStatsSchema = z.object({
+  level: z.number().min(1).max(15).describe('Upgrade level (1-15)'),
+  common: WeaponUpgradeTierStatsSchema.optional().describe('Common quality stats'),
+  rare: WeaponUpgradeTierStatsSchema.optional().describe('Rare quality stats'),
+  epic: WeaponUpgradeTierStatsSchema.optional().describe('Epic quality stats'),
+  legendary: WeaponUpgradeTierStatsSchema.optional().describe('Legendary quality stats'),
+})
+
+/**
+ * Schema for a single Nightfarer class upgrade path
+ */
+export const WeaponClassUpgradesSchema = z.object({
+  nightfarerClass: NightfarerClassSchema.describe('The Nightfarer class for this upgrade path'),
+  levels: z.array(WeaponUpgradeLevelStatsSchema).describe('Upgrade stats for levels 1-15'),
+})
+
+/**
+ * Schema for complete weapon upgrade progression
+ * Contains upgrade paths for all 8 Nightfarer classes
+ */
+export const WeaponUpgradeProgressionSchema = z.object({
+  weaponName: z.string().describe('Name of the weapon'),
+  upgradesByClass: z.array(WeaponClassUpgradesSchema).describe('Upgrade paths for each Nightfarer class'),
+})
+
+/**
  * Normalized Weapon schema matching Prisma Weapon model
  * Enhanced with status buildup for multi-hop queries
+ * Enhanced with upgrade progression for class-specific builds
  */
 export const NormalizedWeaponSchema = z.object({
   name: z.string().describe('Name of the weapon'),
@@ -248,6 +299,9 @@ export const NormalizedWeaponSchema = z.object({
     .string()
     .optional()
     .describe('Unique weapon effect (e.g., "Power of Dark Moon")'),
+  upgradeProgression: WeaponUpgradeProgressionSchema.optional().describe(
+    'Upgrade progression for all Nightfarer classes (8 classes × 15 levels × 4 quality tiers)',
+  ),
   tags: z
     .array(z.string())
     .describe(

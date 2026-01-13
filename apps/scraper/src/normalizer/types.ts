@@ -272,6 +272,8 @@ export interface ParsedWeapon extends ParsedContentBase {
   readonly passiveBenefits?: string[]
   /** Unique weapon effect (e.g., "Power of Dark Moon") */
   readonly uniqueEffect?: string
+  /** Upgrade progression for all Nightfarer classes (8 classes × 15 levels × 4 tiers) */
+  readonly upgradeProgression?: WeaponUpgradeProgression
 }
 
 export interface WeaponStats {
@@ -289,6 +291,61 @@ export interface WeaponScaling {
   readonly intelligence?: string
   readonly faith?: string
   readonly arcane?: string
+}
+
+/**
+ * Nightfarer class types for weapon upgrade paths
+ */
+export type NightfarerClass =
+  | 'wylder'
+  | 'guardian'
+  | 'ironeye'
+  | 'duchess'
+  | 'raider'
+  | 'revenant'
+  | 'recluse'
+  | 'executor'
+
+/**
+ * Quality tiers for weapon upgrades
+ */
+export type WeaponQualityTier = 'common' | 'rare' | 'epic' | 'legendary'
+
+/**
+ * Stats for a single quality tier at a specific level
+ */
+export interface WeaponUpgradeTierStats {
+  readonly atkPwr?: number
+  readonly dmgNeg?: number
+}
+
+/**
+ * Stats for all quality tiers at a specific level
+ */
+export interface WeaponUpgradeLevelStats {
+  readonly level: number
+  readonly common?: WeaponUpgradeTierStats
+  readonly rare?: WeaponUpgradeTierStats
+  readonly epic?: WeaponUpgradeTierStats
+  readonly legendary?: WeaponUpgradeTierStats
+}
+
+/**
+ * Upgrade progression for a single Nightfarer class
+ * Contains 15 levels of upgrade data
+ */
+export interface WeaponClassUpgrades {
+  readonly nightfarerClass: NightfarerClass
+  readonly levels: WeaponUpgradeLevelStats[]
+}
+
+/**
+ * Complete weapon upgrade progression
+ * Contains upgrade paths for all 8 Nightfarer classes
+ */
+export interface WeaponUpgradeProgression {
+  readonly weaponName: string
+  readonly upgradesByClass: WeaponClassUpgrades[]
 }
 
 export interface AttributeRequirements {

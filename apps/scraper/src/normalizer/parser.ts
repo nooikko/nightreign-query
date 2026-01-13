@@ -411,9 +411,13 @@ export function parseWeapon(
       extractSection($, /location|where to find|how to get/i).split('\n')[0] ||
       ''
 
+    // Upgrade progression (8 Nightfarer classes × 15 levels × 4 quality tiers)
+    const cleanedName = cleanText(name)
+    const upgradeProgression = extractWeaponUpgradeProgression($, cleanedName)
+
     const result: ParsedWeapon = {
       type: 'weapon',
-      name: cleanText(name),
+      name: cleanedName,
       sourceUrl: url,
       description: cleanText(description),
       parseSuccess: true,
@@ -430,6 +434,7 @@ export function parseWeapon(
       location: cleanText(location),
       uniqueEffect: uniqueEffect || undefined,
       passiveBenefits: passiveBenefits.length > 0 ? passiveBenefits : undefined,
+      upgradeProgression,
     }
 
     return { success: true, data: result }
@@ -803,6 +808,175 @@ function extractWeaponPassiveBenefits(
   }
 
   return benefits
+}
+
+/**
+ * Nightfarer class names in the order they appear on wiki pages
+ */
+const NIGHTFARER_CLASSES = [
+  'wylder',
+  'guardian',
+  'ironeye',
+  'duchess',
+  'raider',
+  'revenant',
+  'recluse',
+  'executor',
+] as const
+
+type NightfarerClass = (typeof NIGHTFARER_CLASSES)[number]
+
+/**
+ * Extract weapon upgrade progression tables from wiki page
+ *
+ * Wiki structure: 8 tables (one per Nightfarer class), each with:
+ * - 15 rows for upgrade levels (Lv 1-15)
+ * - 4 quality tiers (Common, Rare, Epic, Legendary)
+ * - 2 stats per tier (ATK Pwr, Dmg Neg)
+ *
+ * Returns undefined if no upgrade data found (tables are empty placeholders)
+ */
+function extractWeaponUpgradeProgression(
+  $: ReturnType<typeof loadHtml>,
+  weaponName: string,
+): import('./types').WeaponUpgradeProgression | undefined {
+  const upgradesByClass: import('./types').WeaponClassUpgrades[] = []
+
+  // Look for upgrade tables by finding H3 headers with "[Class] [Weapon] Upgrades"
+  for (const nightfarerClass of NIGHTFARER_CLASSES) {
+    const classCapitalized =
+      nightfarerClass.charAt(0).toUpperCase() + nightfarerClass.slice(1)
+
+    // Find tables associated with this class
+    // Wiki uses H3 headers like "### Wylder Moonveil Upgrades"
+    const headerPatterns = [
+      new RegExp(`${classCapitalized}.*upgrades?`, 'i'),
+      new RegExp(`${classCapitalized}.*${weaponName}`, 'i'),
+    ]
+
+    let table: ReturnType<typeof $> | null = null
+
+    // Search for the upgrade section header
+    $('h3, h4, .wiki-heading').each((_, header) => {
+      const headerText = $(header).text()
+      for (const pattern of headerPatterns) {
+        if (pattern.test(headerText)) {
+          // Find the next table after this header
+          const nextTable = $(header).nextAll('table').first()
+          if (nextTable.length > 0) {
+            table = nextTable
+            return false // break
+          }
+        }
+      }
+    })
+
+    // If no table found by header, try finding tables with class-specific content
+    if (!table) {
+      $('table').each((_, tbl) => {
+        const tableText = $(tbl).text().toLowerCase()
+        if (
+          tableText.includes(nightfarerClass) &&
+          (tableText.includes('lv 1') || tableText.includes('level 1'))
+        ) {
+          table = $(tbl)
+          return false // break
+        }
+      })
+    }
+
+    if (!table) {
+      continue
+    }
+
+    // Parse the upgrade table
+    const levels: import('./types').WeaponUpgradeLevelStats[] = []
+    const rows = $(table).find('tr')
+
+    // Skip header rows (usually first 2 rows: quality icons and stat headers)
+    let dataStartIndex = 0
+    rows.each((i, row) => {
+      const firstCell = $(row).find('td, th').first().text().trim()
+      if (/^lv\s*1$/i.test(firstCell)) {
+        dataStartIndex = i
+        return false // break
+      }
+    })
+
+    // Parse data rows (Lv 1 through Lv 15)
+    rows.slice(dataStartIndex).each((_, row) => {
+      const cells = $(row).find('td, th')
+      if (cells.length < 9) return // Skip malformed rows
+
+      const levelText = $(cells[0]).text().trim()
+      const levelMatch = levelText.match(/(\d+)/)
+      if (!levelMatch) return
+
+      const level = Number.parseInt(levelMatch[1], 10)
+      if (level < 1 || level > 15) return
+
+      // Extract stats from cells
+      // Column layout: Level | Common ATK | Common Neg | Rare ATK | Rare Neg | Epic ATK | Epic Neg | Legendary ATK | Legendary Neg
+      const parseCell = (idx: number): number | undefined => {
+        const text = $(cells[idx]).text().trim()
+        const num = parseNumber(text)
+        return num !== undefined && num > 0 ? num : undefined
+      }
+
+      const levelStats: import('./types').WeaponUpgradeLevelStats = {
+        level,
+        common: {
+          atkPwr: parseCell(1),
+          dmgNeg: parseCell(2),
+        },
+        rare: {
+          atkPwr: parseCell(3),
+          dmgNeg: parseCell(4),
+        },
+        epic: {
+          atkPwr: parseCell(5),
+          dmgNeg: parseCell(6),
+        },
+        legendary: {
+          atkPwr: parseCell(7),
+          dmgNeg: parseCell(8),
+        },
+      }
+
+      // Only add if at least some data exists
+      const hasAnyData =
+        levelStats.common?.atkPwr !== undefined ||
+        levelStats.common?.dmgNeg !== undefined ||
+        levelStats.rare?.atkPwr !== undefined ||
+        levelStats.rare?.dmgNeg !== undefined ||
+        levelStats.epic?.atkPwr !== undefined ||
+        levelStats.epic?.dmgNeg !== undefined ||
+        levelStats.legendary?.atkPwr !== undefined ||
+        levelStats.legendary?.dmgNeg !== undefined
+
+      if (hasAnyData) {
+        levels.push(levelStats)
+      }
+    })
+
+    // Only add this class if we found actual upgrade data
+    if (levels.length > 0) {
+      upgradesByClass.push({
+        nightfarerClass,
+        levels,
+      })
+    }
+  }
+
+  // Return undefined if no upgrade data was found (empty tables)
+  if (upgradesByClass.length === 0) {
+    return undefined
+  }
+
+  return {
+    weaponName,
+    upgradesByClass,
+  }
 }
 
 // ============================================================================

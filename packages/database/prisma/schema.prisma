@@ -30,18 +30,19 @@ model Boss {
 }
 
 model Weapon {
-  id              String  @id @default(cuid())
-  name            String  @unique
-  type            String
-  stats           Json
-  statusBuildup   Json?   // WeaponStatusBuildup - bleed, frost, poison, etc.
-  scaling         Json
-  skill           String
-  description     String
-  passiveBenefits Json?   // string[] - passive effects
-  uniqueEffect    String? // Special weapon effect
-  tags            Json?   // string[] - for filtering
-  embedding       Bytes?
+  id                 String  @id @default(cuid())
+  name               String  @unique
+  type               String
+  stats              Json
+  statusBuildup      Json?   // WeaponStatusBuildup - bleed, frost, poison, etc.
+  scaling            Json
+  skill              String
+  description        String
+  passiveBenefits    Json?   // string[] - passive effects
+  uniqueEffect       String? // Special weapon effect
+  upgradeProgression Json?   // WeaponUpgradeProgression - 8 classes × 15 levels × 4 tiers
+  tags               Json?   // string[] - for filtering
+  embedding          Bytes?
 }
 
 model Relic {
