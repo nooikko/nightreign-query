@@ -3,9 +3,17 @@
  *
  * Generates embeddings for search queries using bge-small-en-v1.5.
  * Uses the same model as content embeddings for consistency.
+ *
+ * Supports GPU acceleration via CUDA when available.
+ * Configure with EMBEDDING_DEVICE=cuda or USE_GPU=true environment variables.
  */
 
 import { pipeline as createPipeline } from '@huggingface/transformers'
+import {
+  getGpuConfig,
+  getPipelineOptions,
+  configureTransformersEnv,
+} from '../config'
 
 /** Type for the pipeline function result */
 type ExtractionPipeline = (
@@ -110,16 +118,27 @@ export class QueryEmbedder {
    * Load the embedding pipeline
    */
   private async loadPipeline(): Promise<void> {
-    console.log(`Loading query embedding model: ${MODEL_NAME}...`)
+    // Configure Transformers.js environment
+    configureTransformersEnv()
+
+    const gpuConfig = getGpuConfig()
+    const pipelineOptions = getPipelineOptions()
+
+    console.log(
+      `Loading query embedding model: ${MODEL_NAME} (device: ${gpuConfig.device})...`,
+    )
     const startTime = Date.now()
 
     // Use unknown intermediate cast to handle complex union type
     this.pipeline = (await createPipeline('feature-extraction', MODEL_NAME, {
-      dtype: 'fp32',
+      dtype: pipelineOptions.dtype,
+      device: pipelineOptions.device,
     })) as unknown as ExtractionPipeline
 
     const loadTime = Date.now() - startTime
-    console.log(`Query embedding model loaded in ${loadTime}ms`)
+    console.log(
+      `Query embedding model loaded in ${loadTime}ms (device: ${gpuConfig.device})`,
+    )
   }
 
   /**

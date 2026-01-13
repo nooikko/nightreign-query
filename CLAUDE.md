@@ -66,6 +66,7 @@ pnpm turbo type-check --filter=@nightreign/web   # Type check single package
 - **Vector Store**: Orama with hybrid search (vector similarity + BM25 full-text)
 - **Reranker**: Optional bge-reranker-base for relevance scoring
 - **LLM Formatting**: Groq API (llama-3.1-8b-instant) for streaming natural language responses
+- **GPU Acceleration**: Optional CUDA support for ~5-10x faster embeddings
 
 ### Key Files
 - `packages/database/prisma/schema.prisma` - Database models (Boss, Weapon, Relic, etc.)
@@ -98,6 +99,35 @@ ANTHROPIC_API_KEY=         # Required: for Claude normalization
 ```
 DATABASE_URL="file:./data/dev.db"
 ```
+
+## GPU Configuration
+
+Embedding generation supports CUDA GPU acceleration for ~5-10x speedup.
+
+### Environment Variables
+```bash
+# Option 1: Explicit device selection
+EMBEDDING_DEVICE=cuda    # or 'cpu'
+
+# Option 2: Simple toggle
+USE_GPU=true             # or 'false'
+```
+
+### Requirements for GPU (Linux only)
+- NVIDIA GPU (e.g., RTX 3070)
+- CUDA toolkit installed
+- `CUDA_PATH` or `CUDA_HOME` environment variable set
+
+### Behavior
+- **Auto-detection**: If no env var is set, GPU is used when CUDA is detected
+- **Fallback**: If GPU requested but unavailable, falls back to CPU with warning
+- **Data Types**: GPU uses fp16 for speed, CPU uses fp32 for precision
+
+### Performance Comparison
+| Operation | CPU | GPU (RTX 3070) |
+|-----------|-----|----------------|
+| Single embedding | ~50-100ms | ~5-10ms |
+| Batch of 100 | ~5-10s | ~0.5-1s |
 
 ## Server Deployment
 

@@ -3,12 +3,20 @@
  *
  * Generates 384-dimensional embeddings for content chunks using
  * the Hugging Face Transformers.js library with ONNX runtime.
+ *
+ * Supports GPU acceleration via CUDA when available.
+ * Configure with EMBEDDING_DEVICE=cuda or USE_GPU=true environment variables.
  */
 
 import {
   type FeatureExtractionPipeline,
   pipeline,
 } from '@huggingface/transformers'
+import {
+  getGpuConfig,
+  getPipelineOptions,
+  configureTransformersEnv,
+} from '@nightreign/database/config'
 
 /** Model to use for embedding generation */
 const MODEL_NAME = 'BAAI/bge-small-en-v1.5'
@@ -76,17 +84,26 @@ export class EmbeddingGenerator {
    * Load the embedding pipeline
    */
   private async loadPipeline(): Promise<void> {
-    console.log(`Loading embedding model: ${MODEL_NAME}...`)
+    // Configure Transformers.js environment
+    configureTransformersEnv()
+
+    const gpuConfig = getGpuConfig()
+    const pipelineOptions = getPipelineOptions()
+
+    console.log(
+      `Loading embedding model: ${MODEL_NAME} (device: ${gpuConfig.device})...`,
+    )
     const startTime = Date.now()
 
     this.pipeline = await pipeline('feature-extraction', MODEL_NAME, {
-      // Use WASM for CPU-only execution (works in Node.js)
-      // WebGPU would require browser/Deno environment
-      dtype: 'fp32',
+      dtype: pipelineOptions.dtype,
+      device: pipelineOptions.device,
     })
 
     const loadTime = Date.now() - startTime
-    console.log(`Embedding model loaded in ${loadTime}ms`)
+    console.log(
+      `Embedding model loaded in ${loadTime}ms (device: ${gpuConfig.device})`,
+    )
   }
 
   /**
