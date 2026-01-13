@@ -42,6 +42,7 @@ export const CATEGORY_URLS = {
   merchants: `${WIKI_BASE_URL}/Merchants`,
   locations: `${WIKI_BASE_URL}/Locations`,
   expeditions: `${WIKI_BASE_URL}/Expeditions`,
+  items: `${WIKI_BASE_URL}/Items`,
 } as const
 
 export type ContentCategory = keyof typeof CATEGORY_URLS

@@ -73,6 +73,7 @@ const CATEGORY_TO_CONTENT_TYPE: Record<ContentCategory, ContentType> = {
   merchants: 'merchant',
   locations: 'location',
   expeditions: 'expedition',
+  items: 'item',
 }
 
 function printHelp(): void {
