@@ -42,9 +42,6 @@ yarn-error.log*
 # Biome
 .biome/
 
-# Orama index
-**/data/orama-index.json
-
 # Scraper cache
 **/cache/
 
