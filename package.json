@@ -14,7 +14,9 @@
     "db:studio": "turbo run db:studio",
     "scrape": "turbo run scrape --filter=scraper",
     "scrape:all": "pnpm --filter scraper run scrape:all",
-    "download:models": "tsx scripts/download-models.ts"
+    "download:models": "tsx scripts/download-models.ts",
+    "eval": "tsx scripts/search-eval/run-eval.ts",
+    "eval:format": "tsx scripts/search-eval/run-eval.ts --format"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",

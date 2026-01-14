@@ -6,6 +6,7 @@
  */
 
 import { env } from '@huggingface/transformers'
+import { existsSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -40,9 +41,23 @@ function checkCudnnAvailable(): boolean {
 
   // Check for cuDNN 9 in library path
   // Common locations: /usr/lib/x86_64-linux-gnu, /usr/local/cuda/lib64
-  const hasCudnn = ldLibraryPath.includes('x86_64-linux-gnu') || ldLibraryPath.includes('cudnn')
+  const hasCudnnInPath = ldLibraryPath.includes('x86_64-linux-gnu') || ldLibraryPath.includes('cudnn')
 
-  return hasCudnn
+  // Also check standard system library locations (available via ldconfig)
+  const systemLibPaths = [
+    '/usr/local/lib/libcudnn.so.9',
+    '/lib/x86_64-linux-gnu/libcudnn.so.9',
+    '/usr/lib/x86_64-linux-gnu/libcudnn.so.9',
+  ]
+  const hasCudnnInSystem = systemLibPaths.some(p => {
+    try {
+      return existsSync(p)
+    } catch {
+      return false
+    }
+  })
+
+  return hasCudnnInPath || hasCudnnInSystem
 }
 
 /**
@@ -65,17 +80,32 @@ function checkCudaAvailable(): boolean {
   // Check if running on Linux (CUDA GPU support in Node.js is Linux-only)
   const isLinux = process.platform === 'linux'
 
+  // Also check standard system locations for CUDA runtime
+  const systemCudaPaths = [
+    '/usr/bin/nvcc',
+    '/lib/x86_64-linux-gnu/libcudart.so',
+    '/usr/lib/x86_64-linux-gnu/libcudart.so',
+  ]
+  const hasCudaInSystem = systemCudaPaths.some(p => {
+    try {
+      return existsSync(p)
+    } catch {
+      return false
+    }
+  })
+
+  const hasCuda = !!cudaPath || hasCudaInPath || hasCudaInSystem
+
   // Check for cuDNN 9 (required by ONNX Runtime 1.21+)
   const hasCudnn = checkCudnnAvailable()
 
-  if (isLinux && (cudaPath || hasCudaInPath) && !hasCudnn) {
-    console.warn('[GPU Config] CUDA detected but cuDNN 9 not found in LD_LIBRARY_PATH')
+  if (isLinux && hasCuda && !hasCudnn) {
+    console.warn('[GPU Config] CUDA detected but cuDNN 9 not found')
     console.warn('[GPU Config] ONNX Runtime 1.21+ requires cuDNN 9.x for GPU acceleration')
-    console.warn('[GPU Config] Add cuDNN lib directory to LD_LIBRARY_PATH (e.g., /usr/lib/x86_64-linux-gnu)')
     return false
   }
 
-  return isLinux && (!!cudaPath || hasCudaInPath) && hasCudnn
+  return isLinux && hasCuda && hasCudnn
 }
 
 /**

@@ -14,7 +14,7 @@ import { pipeline } from '@huggingface/transformers'
 import { env } from '@huggingface/transformers'
 import path from 'node:path'
 
-const MODEL_NAME = 'BAAI/bge-small-en-v1.5'
+const MODEL_NAME = 'BAAI/bge-large-en-v1.5'
 
 // Set cache directory relative to project root for consistent location
 const CACHE_DIR = path.join(process.cwd(), '.cache', 'models')

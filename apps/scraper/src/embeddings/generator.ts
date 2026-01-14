@@ -1,7 +1,7 @@
 /**
- * Embedding Generator using bge-small-en-v1.5
+ * Embedding Generator using bge-large-en-v1.5
  *
- * Generates 384-dimensional embeddings for content chunks using
+ * Generates 1024-dimensional embeddings for content chunks using
  * the Hugging Face Transformers.js library with ONNX runtime.
  *
  * Supports GPU acceleration via CUDA when available.
@@ -19,10 +19,10 @@ import {
 } from '@nightreign/database/config'
 
 /** Model to use for embedding generation */
-const MODEL_NAME = 'BAAI/bge-small-en-v1.5'
+const MODEL_NAME = 'BAAI/bge-large-en-v1.5'
 
-/** Embedding dimensions (fixed for bge-small-en-v1.5) */
-export const EMBEDDING_DIMENSIONS = 384
+/** Embedding dimensions (fixed for bge-large-en-v1.5) */
+export const EMBEDDING_DIMENSIONS = 1024
 
 /** Batch size for processing multiple texts */
 const BATCH_SIZE = 32
@@ -33,7 +33,7 @@ const BATCH_SIZE = 32
 export interface EmbeddingResult {
   /** Text that was embedded */
   text: string
-  /** 384-dimensional embedding vector */
+  /** 1024-dimensional embedding vector */
   embedding: Float32Array
 }
 
@@ -142,7 +142,7 @@ export class EmbeddingGenerator {
    * Generate embedding for a single text
    *
    * @param text - Text to embed
-   * @returns 384-dimensional embedding as Float32Array
+   * @returns 1024-dimensional embedding as Float32Array
    */
   async embed(text: string): Promise<Float32Array> {
     const extractor = await this.ensureInitialized()
@@ -153,7 +153,7 @@ export class EmbeddingGenerator {
     })
 
     // Extract the embedding from the output tensor
-    // The output is a 2D tensor of shape [1, 384]
+    // The output is a 2D tensor of shape [1, 1024]
     const embedding = output.tolist()[0] as number[]
     return new Float32Array(embedding)
   }
@@ -186,7 +186,7 @@ export class EmbeddingGenerator {
         })
 
         // Extract embeddings from batch output
-        // Shape is [batch_size, 384]
+        // Shape is [batch_size, 1024]
         const embeddings = output.tolist() as number[][]
 
         for (let j = 0; j < batch.length; j++) {

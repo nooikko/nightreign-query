@@ -1,0 +1,362 @@
+{
+  "$schema": "./test-questions.schema.json",
+  "version": "1.0.0",
+  "description": "Natural language test questions for search quality evaluation",
+  "questions": [
+    {
+      "id": "boss-easy-1",
+      "category": "boss",
+      "difficulty": "easy",
+      "question": "What are the weaknesses of the Grafted Scion?",
+      "expectedType": "boss",
+      "expectedTopics": ["weakness", "damage type"],
+      "notes": "Should return damage type weaknesses with specific percentages if available"
+    },
+    {
+      "id": "boss-easy-2",
+      "category": "boss",
+      "difficulty": "easy",
+      "question": "How do I beat Margit the Fell Omen?",
+      "expectedType": "boss",
+      "expectedTopics": ["strategy", "tips"],
+      "notes": "Should provide actionable combat strategy"
+    },
+    {
+      "id": "boss-medium-1",
+      "category": "boss",
+      "difficulty": "medium",
+      "question": "What rewards do I get for defeating the Tunnel Crystalian?",
+      "expectedType": "boss",
+      "expectedTopics": ["rewards", "drops", "loot"],
+      "notes": "Should mention specific item drops"
+    },
+    {
+      "id": "boss-hard-1",
+      "category": "boss",
+      "difficulty": "hard",
+      "question": "Which bosses are weak to holy damage and what relics help against them?",
+      "expectedType": "boss",
+      "expectedTopics": ["weakness", "holy", "relic", "synergy"],
+      "notes": "Cross-references boss weaknesses with relic recommendations"
+    },
+
+    {
+      "id": "weapon-easy-1",
+      "category": "weapon",
+      "difficulty": "easy",
+      "question": "What stats does the Uchigatana scale with?",
+      "expectedType": "weapon",
+      "expectedTopics": ["scaling", "stats", "STR", "DEX"],
+      "notes": "Should show stat scaling grades (S/A/B/C/D/E)"
+    },
+    {
+      "id": "weapon-easy-2",
+      "category": "weapon",
+      "difficulty": "easy",
+      "question": "What skill does the Moonveil have?",
+      "expectedType": "weapon",
+      "expectedTopics": ["skill", "weapon art"],
+      "notes": "Should name the skill and describe what it does"
+    },
+    {
+      "id": "weapon-medium-1",
+      "category": "weapon",
+      "difficulty": "medium",
+      "question": "What's a good strength weapon for fighting fire-resistant enemies?",
+      "expectedType": "weapon",
+      "expectedTopics": ["strength", "damage type", "recommendation"],
+      "notes": "Should recommend specific weapons with non-fire damage"
+    },
+    {
+      "id": "weapon-hard-1",
+      "category": "weapon",
+      "difficulty": "hard",
+      "question": "Which colossal weapons have the best poise damage and what builds use them?",
+      "expectedType": "weapon",
+      "expectedTopics": ["colossal", "poise", "build", "stats"],
+      "notes": "Complex query requiring weapon comparison and build context"
+    },
+
+    {
+      "id": "relic-easy-1",
+      "category": "relic",
+      "difficulty": "easy",
+      "question": "What does the Crimson Amber Medallion relic do?",
+      "expectedType": "relic",
+      "expectedTopics": ["effect", "health", "HP"],
+      "notes": "Should describe the effect with specific numbers if available"
+    },
+    {
+      "id": "relic-easy-2",
+      "category": "relic",
+      "difficulty": "easy",
+      "question": "What tier is the Erdtree's Favor relic?",
+      "expectedType": "relic",
+      "expectedTopics": ["tier", "color", "rarity"],
+      "notes": "Should identify the relic tier/color"
+    },
+    {
+      "id": "relic-medium-1",
+      "category": "relic",
+      "difficulty": "medium",
+      "question": "What relics work well together for a magic build?",
+      "expectedType": "relic",
+      "expectedTopics": ["synergy", "magic", "INT", "FP"],
+      "notes": "Should recommend complementary relics for spellcasters"
+    },
+    {
+      "id": "relic-hard-1",
+      "category": "relic",
+      "difficulty": "hard",
+      "question": "Which relics boost attack power based on conditions and how do they stack?",
+      "expectedType": "relic",
+      "expectedTopics": ["attack power", "stacking", "conditions", "buff"],
+      "notes": "Complex query about conditional damage buffs and interactions"
+    },
+
+    {
+      "id": "nightfarer-easy-1",
+      "category": "nightfarer",
+      "difficulty": "easy",
+      "question": "What is the Vagabond's passive ability?",
+      "expectedType": "nightfarer",
+      "expectedTopics": ["passive", "ability"],
+      "notes": "Should name and describe the passive effect"
+    },
+    {
+      "id": "nightfarer-easy-2",
+      "category": "nightfarer",
+      "difficulty": "easy",
+      "question": "What starting stats does the Astrologer have?",
+      "expectedType": "nightfarer",
+      "expectedTopics": ["stats", "INT", "starting"],
+      "notes": "Should list stat values"
+    },
+    {
+      "id": "nightfarer-medium-1",
+      "category": "nightfarer",
+      "difficulty": "medium",
+      "question": "Which Nightfarer is best for a tanky frontline role?",
+      "expectedType": "nightfarer",
+      "expectedTopics": ["tank", "defense", "HP", "recommendation"],
+      "notes": "Should recommend with reasoning based on stats and abilities"
+    },
+    {
+      "id": "nightfarer-hard-1",
+      "category": "nightfarer",
+      "difficulty": "hard",
+      "question": "How do different Nightfarers' ultimates compare for boss fights?",
+      "expectedType": "nightfarer",
+      "expectedTopics": ["ultimate", "boss", "comparison", "damage"],
+      "notes": "Complex comparative analysis across multiple characters"
+    },
+
+    {
+      "id": "skill-easy-1",
+      "category": "skill",
+      "difficulty": "easy",
+      "question": "How much FP does the Glintstone Pebble skill cost?",
+      "expectedType": "skill",
+      "expectedTopics": ["FP", "cost"],
+      "notes": "Should provide exact FP cost"
+    },
+    {
+      "id": "skill-easy-2",
+      "category": "skill",
+      "difficulty": "easy",
+      "question": "What weapons can use the Lion's Claw skill?",
+      "expectedType": "skill",
+      "expectedTopics": ["weapons", "compatible"],
+      "notes": "Should list compatible weapon types or specific weapons"
+    },
+    {
+      "id": "skill-medium-1",
+      "category": "skill",
+      "difficulty": "medium",
+      "question": "What's the best skill for breaking enemy poise quickly?",
+      "expectedType": "skill",
+      "expectedTopics": ["poise", "stagger", "damage"],
+      "notes": "Should recommend high-poise-damage skills"
+    },
+
+    {
+      "id": "item-easy-1",
+      "category": "item",
+      "difficulty": "easy",
+      "question": "Where can I find a Stonesword Key?",
+      "expectedType": "item",
+      "expectedTopics": ["location", "where to find", "chest"],
+      "notes": "CRITICAL TEST - Should list specific locations like Great Church, Forts, Spirit Merchant"
+    },
+    {
+      "id": "item-easy-2",
+      "category": "item",
+      "difficulty": "easy",
+      "question": "What does Fire Grease do?",
+      "expectedType": "item",
+      "expectedTopics": ["effect", "fire damage", "buff"],
+      "notes": "Should describe the temporary fire damage buff"
+    },
+    {
+      "id": "item-medium-1",
+      "category": "item",
+      "difficulty": "medium",
+      "question": "Where can I buy consumables in Nightreign?",
+      "expectedType": "item",
+      "expectedTopics": ["merchant", "purchase", "Township", "Spirit Merchant"],
+      "notes": "Should mention Spirit Merchants and locations like Township"
+    },
+    {
+      "id": "item-hard-1",
+      "category": "item",
+      "difficulty": "hard",
+      "question": "Which key items are needed for the remembrance quests and where do I get them?",
+      "expectedType": "item",
+      "expectedTopics": ["key item", "quest", "location", "remembrance"],
+      "notes": "Complex query spanning multiple quest items and their sources"
+    },
+
+    {
+      "id": "spell-easy-1",
+      "category": "spell",
+      "difficulty": "easy",
+      "question": "What are the stat requirements for Comet Azur?",
+      "expectedType": "spell",
+      "expectedTopics": ["requirements", "INT", "stats"],
+      "notes": "Should list INT requirement and any other stats needed"
+    },
+    {
+      "id": "spell-easy-2",
+      "category": "spell",
+      "difficulty": "easy",
+      "question": "How many spell slots does Flame of Frenzy take?",
+      "expectedType": "spell",
+      "expectedTopics": ["slots", "memory"],
+      "notes": "Should provide slot count"
+    },
+    {
+      "id": "spell-medium-1",
+      "category": "spell",
+      "difficulty": "medium",
+      "question": "What's a good early game sorcery for INT builds?",
+      "expectedType": "spell",
+      "expectedTopics": ["sorcery", "INT", "early game", "recommendation"],
+      "notes": "Should recommend accessible, efficient spells"
+    },
+
+    {
+      "id": "location-easy-1",
+      "category": "location",
+      "difficulty": "easy",
+      "question": "What enemies can I find in the Township area?",
+      "expectedType": "location",
+      "expectedTopics": ["enemies", "Township"],
+      "notes": "Should list enemy types found in Township"
+    },
+    {
+      "id": "location-easy-2",
+      "category": "location",
+      "difficulty": "easy",
+      "question": "What's inside an Evergaol?",
+      "expectedType": "location",
+      "expectedTopics": ["Evergaol", "boss", "prisoner"],
+      "notes": "Should explain Evergaol mechanics and boss fights"
+    },
+    {
+      "id": "location-medium-1",
+      "category": "location",
+      "difficulty": "medium",
+      "question": "Where can I find good loot in the Fort areas?",
+      "expectedType": "location",
+      "expectedTopics": ["Fort", "loot", "chest", "items"],
+      "notes": "Should describe Fort rewards and chest locations"
+    },
+
+    {
+      "id": "talisman-easy-1",
+      "category": "talisman",
+      "difficulty": "easy",
+      "question": "What does the Radagon's Soreseal talisman do?",
+      "expectedType": "talisman",
+      "expectedTopics": ["effect", "stats", "damage taken"],
+      "notes": "Should explain both the bonus and drawback"
+    },
+    {
+      "id": "talisman-medium-1",
+      "category": "talisman",
+      "difficulty": "medium",
+      "question": "Which talismans boost magic damage?",
+      "expectedType": "talisman",
+      "expectedTopics": ["magic", "damage", "INT", "sorcery"],
+      "notes": "Should list magic-boosting talismans"
+    },
+
+    {
+      "id": "armor-easy-1",
+      "category": "armor",
+      "difficulty": "easy",
+      "question": "What's the heaviest armor set in the game?",
+      "expectedType": "armor",
+      "expectedTopics": ["weight", "heavy", "poise"],
+      "notes": "Should identify high-weight armor with stats"
+    },
+    {
+      "id": "armor-medium-1",
+      "category": "armor",
+      "difficulty": "medium",
+      "question": "What armor has good fire resistance without being too heavy?",
+      "expectedType": "armor",
+      "expectedTopics": ["fire resistance", "weight", "medium"],
+      "notes": "Should balance resistance vs weight"
+    },
+
+    {
+      "id": "general-easy-1",
+      "category": "general",
+      "difficulty": "easy",
+      "question": "How does co-op work in Nightreign?",
+      "expectedType": "guide",
+      "expectedTopics": ["co-op", "multiplayer", "team"],
+      "notes": "Should explain the cooperative gameplay mechanics"
+    },
+    {
+      "id": "general-medium-1",
+      "category": "general",
+      "difficulty": "medium",
+      "question": "What's the best strategy for the final expedition?",
+      "expectedType": "expedition",
+      "expectedTopics": ["strategy", "expedition", "endgame"],
+      "notes": "Should provide actionable expedition strategy"
+    },
+    {
+      "id": "general-hard-1",
+      "category": "general",
+      "difficulty": "hard",
+      "question": "How do I build a team comp that covers all damage types?",
+      "expectedType": "guide",
+      "expectedTopics": ["team", "composition", "damage types", "synergy"],
+      "notes": "Complex build advice spanning Nightfarers, weapons, and relics"
+    }
+  ],
+  "metadata": {
+    "totalQuestions": 38,
+    "byCategory": {
+      "boss": 4,
+      "weapon": 4,
+      "relic": 4,
+      "nightfarer": 4,
+      "skill": 3,
+      "item": 4,
+      "spell": 3,
+      "location": 3,
+      "talisman": 2,
+      "armor": 2,
+      "general": 3
+    },
+    "byDifficulty": {
+      "easy": 19,
+      "medium": 13,
+      "hard": 6
+    }
+  }
+}

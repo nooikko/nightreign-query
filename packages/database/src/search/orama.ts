@@ -42,8 +42,8 @@ type ContentType =
   | 'item'
   | 'guide'
 
-/** Embedding dimensions (matches bge-small-en-v1.5) */
-export const EMBEDDING_DIMENSIONS = 384
+/** Embedding dimensions (matches bge-large-en-v1.5) */
+export const EMBEDDING_DIMENSIONS = 1024
 
 /** Orama schema for content chunks */
 const oramaSchema = {

@@ -1,7 +1,7 @@
 /**
  * Query Embedding Service
  *
- * Generates embeddings for search queries using bge-small-en-v1.5.
+ * Generates embeddings for search queries using bge-large-en-v1.5.
  * Uses the same model as content embeddings for consistency.
  *
  * Supports GPU acceleration via CUDA when available.
@@ -23,10 +23,10 @@ type ExtractionPipeline = (
 ) => Promise<{ tolist: () => number[][] }>
 
 /** Model to use for embedding generation (same as content embeddings) */
-const MODEL_NAME = 'BAAI/bge-small-en-v1.5'
+const MODEL_NAME = 'BAAI/bge-large-en-v1.5'
 
-/** Embedding dimensions (fixed for bge-small-en-v1.5) */
-export const QUERY_EMBEDDING_DIMENSIONS = 384
+/** Embedding dimensions (fixed for bge-large-en-v1.5) */
+export const QUERY_EMBEDDING_DIMENSIONS = 1024
 
 /** Cache configuration */
 const CACHE_MAX_SIZE = 100 // Maximum number of cached embeddings
@@ -162,7 +162,7 @@ export class QueryEmbedder {
    * Cache entries expire after 5 minutes to ensure freshness.
    *
    * @param query - Search query text
-   * @returns 384-dimensional embedding as number array
+   * @returns 1024-dimensional embedding as number array
    * @throws Error if embedding dimensions don't match expected size
    */
   async embed(query: string): Promise<number[]> {

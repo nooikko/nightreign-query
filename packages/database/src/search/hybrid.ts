@@ -305,7 +305,7 @@ export class HybridSearch {
   /**
    * Perform vector-only search (requires embedding)
    *
-   * @param embedding - Query embedding vector (384 dimensions)
+   * @param embedding - Query embedding vector (1024 dimensions)
    * @param options - Search options
    * @returns Search results
    */

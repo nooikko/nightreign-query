@@ -235,6 +235,86 @@ async function handleCacheClear(): Promise<void> {
   console.log(`  Removed ${statsBefore.totalEntries} entries`)
 }
 
+async function handleParseAll(): Promise<void> {
+  const scraper = await createScraper({
+    cache: {
+      cacheDir: DEFAULT_CACHE_DIR,
+    },
+  })
+
+  try {
+    await scraper.initialize()
+
+    console.log('\nParsing all categories...')
+    console.log('='.repeat(50))
+
+    const startTime = Date.now()
+    const allCategories = Object.keys(CATEGORY_URLS) as ContentCategory[]
+    const results: Array<{
+      category: string
+      total: number
+      success: number
+      errors: number
+    }> = []
+
+    for (const category of allCategories) {
+      const contentType = CATEGORY_TO_CONTENT_TYPE[category]
+      const categoryUrl = CATEGORY_URLS[category]
+      const links = await scraper.extractLinksFromCategory(categoryUrl)
+
+      console.log(`\n[${category}] Found ${links.length} pages`)
+
+      let successCount = 0
+      let errorCount = 0
+
+      for (const pageUrl of links) {
+        const pageResult = await scraper.scrapePage(pageUrl)
+
+        if (!pageResult.success) {
+          errorCount++
+          continue
+        }
+
+        const parseResult = parseContent(pageResult.html, pageUrl, contentType)
+
+        if (parseResult.success) {
+          successCount++
+        } else {
+          errorCount++
+        }
+      }
+
+      console.log(`  Parsed: ${successCount}, Errors: ${errorCount}`)
+      results.push({
+        category,
+        total: links.length,
+        success: successCount,
+        errors: errorCount,
+      })
+    }
+
+    const duration = ((Date.now() - startTime) / 1000).toFixed(1)
+
+    console.log('')
+    console.log('='.repeat(50))
+    console.log('Parse All Complete!')
+    console.log(`  Duration: ${duration}s`)
+    console.log('')
+    console.log('By category:')
+    let totalSuccess = 0
+    let totalErrors = 0
+    for (const r of results) {
+      console.log(`  ${r.category}: ${r.success}/${r.total}`)
+      totalSuccess += r.success
+      totalErrors += r.errors
+    }
+    console.log('')
+    console.log(`Total: ${totalSuccess} parsed, ${totalErrors} errors`)
+  } finally {
+    await scraper.close()
+  }
+}
+
 async function handleParse(args: string[]): Promise<void> {
   const [category, url] = args
 
@@ -488,8 +568,8 @@ async function handleEmbed(args: string[]): Promise<void> {
 
   console.log('\nEmbedding Generator Test')
   console.log('='.repeat(50))
-  console.log('Model: BAAI/bge-small-en-v1.5')
-  console.log('Dimensions: 384')
+  console.log('Model: BAAI/bge-large-en-v1.5')
+  console.log('Dimensions: 1024')
   console.log('')
 
   const generator = getEmbeddingGenerator()
@@ -563,6 +643,136 @@ async function handleEmbed(args: string[]): Promise<void> {
 
   console.log('='.repeat(50))
   console.log('All tests completed successfully!')
+}
+
+async function handleNormalizeAll(args: string[]): Promise<void> {
+  const forceReprocess = args.includes('--force') || args.includes('-f')
+
+  const scraper = await createScraper({
+    cache: {
+      cacheDir: DEFAULT_CACHE_DIR,
+    },
+  })
+
+  const normalizedCache = createNormalizedCache()
+
+  try {
+    await scraper.initialize()
+
+    console.log('\nNormalizing all categories...')
+    console.log('='.repeat(50))
+    console.log(`  Schema version: ${SCHEMA_VERSION}`)
+    console.log(`  Force reprocess: ${forceReprocess}`)
+
+    const cacheStats = normalizedCache.getStats()
+    console.log(`  Cached normalizations: ${cacheStats.successfulEntries}`)
+    console.log('')
+
+    const startTime = Date.now()
+    const allCategories = Object.keys(CATEGORY_URLS) as ContentCategory[]
+    const results: Array<{
+      category: string
+      total: number
+      normalized: number
+      cached: number
+      errors: number
+    }> = []
+
+    for (const category of allCategories) {
+      const contentType = CATEGORY_TO_CONTENT_TYPE[category]
+      const categoryUrl = CATEGORY_URLS[category]
+      const links = await scraper.extractLinksFromCategory(categoryUrl)
+
+      console.log(`\n[${category}] Processing ${links.length} pages...`)
+
+      let normalizeSuccess = 0
+      let normalizeError = 0
+      let skippedFromCache = 0
+
+      for (const pageUrl of links) {
+        const pageResult = await scraper.scrapePage(pageUrl)
+
+        if (!pageResult.success) {
+          normalizeError++
+          continue
+        }
+
+        const parseResult = parseContent(pageResult.html, pageUrl, contentType)
+
+        if (!parseResult.success) {
+          normalizeError++
+          continue
+        }
+
+        const needsNorm = normalizedCache.needsNormalization(
+          pageUrl,
+          pageResult.html,
+          { forceReprocess },
+        )
+
+        if (!needsNorm) {
+          skippedFromCache++
+          continue
+        }
+
+        const result = normalizeDirect(parseResult.data)
+
+        if (result.success) {
+          normalizeSuccess++
+          normalizedCache.set(
+            pageUrl,
+            contentType,
+            result.data as NormalizedContent,
+            result.chunks as import('@normalizer/schemas').ContentChunk[],
+            pageResult.html,
+            'direct',
+          )
+        } else {
+          normalizeError++
+          normalizedCache.setFailed(pageUrl, contentType, pageResult.html, result.error)
+        }
+      }
+
+      console.log(`  Normalized: ${normalizeSuccess}, Cached: ${skippedFromCache}, Errors: ${normalizeError}`)
+      results.push({
+        category,
+        total: links.length,
+        normalized: normalizeSuccess,
+        cached: skippedFromCache,
+        errors: normalizeError,
+      })
+    }
+
+    const duration = ((Date.now() - startTime) / 1000).toFixed(1)
+
+    console.log('')
+    console.log('='.repeat(50))
+    console.log('Normalize All Complete!')
+    console.log(`  Duration: ${duration}s`)
+    console.log('')
+    console.log('By category:')
+    let totalNormalized = 0
+    let totalCached = 0
+    let totalErrors = 0
+    for (const r of results) {
+      console.log(`  ${r.category}: ${r.normalized} new, ${r.cached} cached, ${r.errors} errors`)
+      totalNormalized += r.normalized
+      totalCached += r.cached
+      totalErrors += r.errors
+    }
+    console.log('')
+    console.log(`Total: ${totalNormalized} normalized, ${totalCached} from cache, ${totalErrors} errors`)
+
+    // Show updated cache stats
+    const newCacheStats = normalizedCache.getStats()
+    console.log('')
+    console.log('Cache Statistics:')
+    console.log(`  Total cached: ${newCacheStats.successfulEntries}`)
+    console.log(`  Failed: ${newCacheStats.failedEntries}`)
+    console.log(`  Size: ${(newCacheStats.totalSizeBytes / 1024 / 1024).toFixed(2)} MB`)
+  } finally {
+    await scraper.close()
+  }
 }
 
 async function handleNormalize(args: string[]): Promise<void> {
@@ -1164,6 +1374,31 @@ async function handleImport(): Promise<void> {
             })
             break
 
+          case 'item':
+            await prisma.item.upsert({
+              where: { name: data.name },
+              update: {
+                category: data.category || 'Unknown',
+                effect: data.effect || '',
+                description: data.description || '',
+                locations: data.locations || [],
+                purchaseLocations: data.purchaseLocations,
+                uses: data.uses,
+                tags: data.tags || [],
+              },
+              create: {
+                name: data.name,
+                category: data.category || 'Unknown',
+                effect: data.effect || '',
+                description: data.description || '',
+                locations: data.locations || [],
+                purchaseLocations: data.purchaseLocations,
+                uses: data.uses,
+                tags: data.tags || [],
+              },
+            })
+            break
+
           default:
             // Skip unknown types
             errors++
@@ -1256,8 +1491,12 @@ async function handleIndex(): Promise<void> {
 
   // Create fresh Orama index
   // Use absolute path relative to project root to ensure consistency
+  // When run via pnpm --filter, cwd is the package dir, so we need to find the monorepo root
   const path = await import('node:path')
-  const projectRoot = process.cwd()
+  const { fileURLToPath } = await import('node:url')
+  const __dirname = path.dirname(fileURLToPath(import.meta.url))
+  // From apps/scraper/src -> go up 3 levels to reach monorepo root
+  const projectRoot = path.resolve(__dirname, '..', '..', '..')
   const indexPath = path.join(projectRoot, 'packages', 'database', 'data', 'orama-index.json')
   console.log(`Index will be saved to: ${indexPath}`)
   const orama = createOramaIndex(indexPath)
@@ -1632,14 +1871,74 @@ async function handleIndex(): Promise<void> {
     (e) => ['expedition', e.difficulty.toLowerCase(), ...(e.tags as string[] || [])]
   )
 
-  // Index items (consumables, key items, materials)
+  // Index items (consumables, key items, materials) - chunked by section
   const items = await prisma.item.findMany()
-  await indexItems(
-    'item',
-    items,
-    (i) => `${i.name} is a ${i.category}. ${i.effect}${i.description ? ` ${i.description}` : ''} Locations: ${safeJoin(i.locations as string[], 'Unknown')}`,
-    (i) => ['item', i.category.toLowerCase().replace(/\s+/g, '-'), ...(i.tags as string[] || [])]
-  )
+  console.log(`Indexing ${items.length} items (chunked by section)...`)
+
+  interface ItemChunk {
+    name: string
+    section: string
+    content: string
+    tags: string[]
+  }
+
+  const itemChunks: ItemChunk[] = []
+
+  for (const i of items) {
+    const baseTags = ['item', i.category.toLowerCase().replace(/\s+/g, '-'), ...(i.tags as string[] || [])]
+
+    // Overview/effect chunk
+    itemChunks.push({
+      name: i.name,
+      section: 'overview',
+      content: `${i.name} is a ${i.category}. ${i.effect}${i.description ? ` ${i.description}` : ''}`,
+      tags: [...baseTags, 'overview'],
+    })
+
+    // Locations chunk - only if locations exist
+    const locations = i.locations as string[] || []
+    if (locations.length > 0 && locations.some(l => l?.trim())) {
+      itemChunks.push({
+        name: i.name,
+        section: 'locations',
+        content: `Where to find ${i.name}: ${locations.filter(l => l?.trim()).join('; ')}`,
+        tags: [...baseTags, 'location', 'where-to-find'],
+      })
+    }
+  }
+
+  // Index all item chunks
+  totalDocs += itemChunks.length
+  const itemTexts = itemChunks.map(c => c.content)
+  const itemEmbedResult = await generator.embedBatch(itemTexts, (done, total) => {
+    process.stdout.write(`\r  Progress: ${done}/${total}`)
+  })
+  console.log('')
+
+  for (let i = 0; i < itemChunks.length; i++) {
+    const chunk = itemChunks[i]
+    const embedding = itemEmbedResult.results.find(r => r.text === itemTexts[i])
+
+    if (!chunk || !embedding) {
+      errors++
+      continue
+    }
+
+    try {
+      await orama.add({
+        type: 'item',
+        name: chunk.name,
+        section: chunk.section,
+        content: chunk.content,
+        tags: chunk.tags,
+        sourceUrl: '',
+        embedding: Array.from(embedding.embedding),
+      })
+      indexed++
+    } catch {
+      errors++
+    }
+  }
 
   // Save the index
   console.log('')
@@ -1734,13 +2033,19 @@ async function main(): Promise<void> {
         break
 
       case 'parse':
-      case 'parse:all':
         await handleParse(args.slice(1))
         break
 
+      case 'parse:all':
+        await handleParseAll()
+        break
+
       case 'normalize':
-      case 'normalize:all':
         await handleNormalize(args.slice(1))
+        break
+
+      case 'normalize:all':
+        await handleNormalizeAll(args.slice(1))
         break
 
       case 'embed':

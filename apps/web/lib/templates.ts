@@ -251,9 +251,11 @@ export const ITEM_TEMPLATE = {
 
 For item questions (consumables, key items, materials):
 - Clearly state what the item does and when to use it
-- List ALL known locations where the item can be found
-- Include quantity available at each location if known
-- Mention if the item is limited or can be farmed`,
+- CRITICAL: Extract ALL location data from context sections labeled "locations" or containing "Where to find"
+- Combine location info from ALL context entries - items may appear multiple times with different sections
+- List EVERY location mentioned (e.g., "Great Church", "Forts", "Spirit Merchant", etc.)
+- NEVER write "Location: N/A" or "Unknown" if ANY location data exists in the context
+- Include quantity or method (chest, purchase, drop) when mentioned`,
 
   formatInstructions: `Format your response as:
 
@@ -263,9 +265,14 @@ For item questions (consumables, key items, materials):
 ## Effect
 [What the item does - be specific]
 
-## Locations
-- **[Location Name]**: [How to get it, quantity if known]
-- **[Alternative sources]**: [Drops, purchases, etc.]
+## Where to Find
+Extract ALL locations from the context. Look for:
+- Sections labeled "locations" or containing "Where to find"
+- Any mentions of specific places (Churches, Forts, Townships, Merchants, etc.)
+
+Format as:
+- **[Location Name]**: [How to get it - chest, purchase, drop, etc.]
+- **[Another Location]**: [Details]
 
 ## Tips
 - [When to use it, whether to save it, etc.]`,
@@ -397,6 +404,9 @@ Provide a helpful, concise answer:`,
 /**
  * Format search results into context string
  *
+ * Groups multiple chunks from the same item together to help the LLM
+ * synthesize information across sections (e.g., overview + locations).
+ *
  * @param results - Array of search results with optional score
  * @returns Formatted context string with relevance indicators
  */
@@ -413,23 +423,52 @@ export function formatResultsAsContext(
     return 'No relevant results found.'
   }
 
-  // Take top 6 results for richer context (was 5)
-  return results
-    .slice(0, 6)
-    .map((result, i) => {
-      // Include relevance indicator for context quality
-      const relevance =
-        result.score !== undefined
-          ? result.score >= 0.8
-            ? '[HIGH RELEVANCE]'
-            : result.score >= 0.5
-              ? '[RELEVANT]'
-              : '[PARTIAL MATCH]'
-          : ''
+  // Group results by name to combine chunks from same item
+  const groupedByName = new Map<
+    string,
+    Array<{
+      type: ContentType
+      name: string
+      section: string
+      content: string
+      score?: number
+    }>
+  >()
 
-      return `[${i + 1}] ${result.name} (${result.type}) ${relevance}
-Section: ${result.section}
-${result.content}`
-    })
-    .join('\n\n---\n\n')
+  // Take top 8 results to allow grouping while maintaining quality
+  for (const result of results.slice(0, 8)) {
+    const key = result.name
+    if (!groupedByName.has(key)) {
+      groupedByName.set(key, [])
+    }
+    groupedByName.get(key)?.push(result)
+  }
+
+  // Format grouped results
+  let index = 0
+  const formatted: string[] = []
+
+  for (const [name, chunks] of groupedByName) {
+    index++
+    const bestScore = Math.max(...chunks.map((c) => c.score ?? 0))
+    const type = chunks[0].type
+
+    // Include relevance indicator based on best score
+    const relevance =
+      bestScore >= 0.8
+        ? '[HIGH RELEVANCE]'
+        : bestScore >= 0.5
+          ? '[RELEVANT]'
+          : '[PARTIAL MATCH]'
+
+    // Combine all sections for this item
+    const sections = chunks
+      .map((chunk) => `[${chunk.section}]\n${chunk.content}`)
+      .join('\n\n')
+
+    formatted.push(`[${index}] ${name} (${type}) ${relevance}
+${sections}`)
+  }
+
+  return formatted.join('\n\n---\n\n')
 }
