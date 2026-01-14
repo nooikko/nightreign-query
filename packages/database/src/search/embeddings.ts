@@ -14,6 +14,7 @@ import {
   getPipelineOptions,
   configureTransformersEnv,
 } from '../config'
+import { logEmbedding } from './debug-logger'
 
 /** Type for the pipeline function result */
 type ExtractionPipeline = (
@@ -167,46 +168,86 @@ export class QueryEmbedder {
   async embed(query: string): Promise<number[]> {
     // Normalize query for cache lookup (trim and lowercase)
     const cacheKey = query.trim().toLowerCase()
+    const startTime = Date.now()
 
     // Check cache first
     const cached = this.cache.get(cacheKey)
     if (cached) {
+      // Log cache hit
+      logEmbedding({
+        query,
+        cacheHit: true,
+        durationMs: Date.now() - startTime,
+        dimensions: cached.length,
+        firstValues: cached.slice(0, 5),
+      })
       return cached
     }
 
-    const startTime = Date.now()
     const extractor = await this.ensureInitialized()
 
-    const output = await extractor(query, {
-      pooling: 'mean',
-      normalize: true,
-    })
+    try {
+      const output = await extractor(query, {
+        pooling: 'mean',
+        normalize: true,
+      })
 
-    // Extract the embedding from the output tensor
-    const embedding = output.tolist()[0]
+      // Extract the embedding from the output tensor
+      const embedding = output.tolist()[0]
 
-    // Validate embedding dimensions to catch model/pipeline issues early
-    if (!embedding || !Array.isArray(embedding)) {
-      throw new Error(
-        `Invalid embedding: expected array, got ${typeof embedding}`,
-      )
+      // Validate embedding dimensions to catch model/pipeline issues early
+      if (!embedding || !Array.isArray(embedding)) {
+        const error = `Invalid embedding: expected array, got ${typeof embedding}`
+        logEmbedding({
+          query,
+          cacheHit: false,
+          durationMs: Date.now() - startTime,
+          error,
+        })
+        throw new Error(error)
+      }
+
+      if (embedding.length !== QUERY_EMBEDDING_DIMENSIONS) {
+        const error = `Invalid embedding dimensions: expected ${QUERY_EMBEDDING_DIMENSIONS}, got ${embedding.length}`
+        logEmbedding({
+          query,
+          cacheHit: false,
+          durationMs: Date.now() - startTime,
+          dimensions: embedding.length,
+          error,
+        })
+        throw new Error(error)
+      }
+
+      // Store in cache
+      this.cache.set(cacheKey, embedding)
+
+      const embedTime = Date.now() - startTime
+
+      // Log successful embedding generation
+      logEmbedding({
+        query,
+        cacheHit: false,
+        durationMs: embedTime,
+        dimensions: embedding.length,
+        firstValues: embedding.slice(0, 5),
+      })
+
+      if (embedTime > 100) {
+        console.warn(`Query embedding took ${embedTime}ms (target: <100ms)`)
+      }
+
+      return embedding
+    } catch (error) {
+      // Log embedding error
+      logEmbedding({
+        query,
+        cacheHit: false,
+        durationMs: Date.now() - startTime,
+        error: error instanceof Error ? error.message : String(error),
+      })
+      throw error
     }
-
-    if (embedding.length !== QUERY_EMBEDDING_DIMENSIONS) {
-      throw new Error(
-        `Invalid embedding dimensions: expected ${QUERY_EMBEDDING_DIMENSIONS}, got ${embedding.length}`,
-      )
-    }
-
-    // Store in cache
-    this.cache.set(cacheKey, embedding)
-
-    const embedTime = Date.now() - startTime
-    if (embedTime > 100) {
-      console.warn(`Query embedding took ${embedTime}ms (target: <100ms)`)
-    }
-
-    return embedding
   }
 
   /**

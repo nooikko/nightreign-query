@@ -10,6 +10,12 @@
 
 import { type SearchOptions, getOramaIndex } from './orama'
 import { getReranker } from './reranker'
+import {
+  logQueryPreprocess,
+  logReranking,
+  logPipelineSummary,
+  isSearchDebugEnabled,
+} from './debug-logger'
 
 /** Content type (duplicated here to avoid cross-package import issues) */
 type ContentType =
@@ -116,6 +122,17 @@ export class HybridSearch {
     const requestedLimit = query.limit || 10
     const shouldRerank = query.rerank !== false // Default to true
 
+    // Log query preprocessing
+    logQueryPreprocess({
+      original: query.query,
+      charCount: query.query.length,
+      wordCount: query.query.split(/\s+/).filter(Boolean).length,
+      filters: {
+        types: query.types,
+        limit: query.limit,
+      },
+    })
+
     // Validate query
     if (!query.query && !query.embedding) {
       return {
@@ -193,19 +210,41 @@ export class HybridSearch {
 
         // Rebuild results in reranked order - now O(n) instead of O(n*m)
         const rerankedResults: HybridSearchResult[] = []
+        const scoreChanges: Array<{
+          id: string
+          name: string
+          originalScore: number
+          rerankedScore: number
+        }> = []
+
         for (const item of reranked) {
           const original = resultsById.get(item.id)
           if (original) {
+            const rerankedScore = 1 / (1 + Math.exp(-item.score))
             rerankedResults.push({
               ...original,
               // Normalize reranker score to 0-1 range using sigmoid
-              score: 1 / (1 + Math.exp(-item.score)),
+              score: rerankedScore,
+            })
+            scoreChanges.push({
+              id: original.id,
+              name: original.name,
+              originalScore: original.score,
+              rerankedScore,
             })
           }
         }
 
         results = rerankedResults
         rerankTime = Date.now() - rerankStart
+
+        // Log reranking details
+        logReranking({
+          inputCount: rerankItems.length,
+          outputCount: results.length,
+          durationMs: rerankTime,
+          scoreChanges,
+        })
       } catch (error) {
         // If reranking fails, fall back to original results
         console.warn('Reranking failed, using original results:', error)
@@ -217,6 +256,21 @@ export class HybridSearch {
     }
 
     const totalTime = Date.now() - startTime
+
+    // Log pipeline summary (especially useful for zero-results debugging)
+    logPipelineSummary({
+      requestId: `hybrid_${startTime}`,
+      query: query.query,
+      totalDurationMs: totalTime,
+      stages: {
+        search: { durationMs: searchTime, mode, resultCount: oramaResults.length },
+        rerank: rerankTime !== undefined
+          ? { durationMs: rerankTime, inputCount: oramaResults.length, outputCount: results.length }
+          : undefined,
+      },
+      finalResultCount: results.length,
+      hasResults: results.length > 0,
+    })
 
     return {
       results,

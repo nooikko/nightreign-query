@@ -46,3 +46,22 @@ export {
   prewarmEmbeddingCache,
   getCacheStats,
 } from './prewarm'
+
+export {
+  isSearchDebugEnabled,
+  logQueryPreprocess,
+  logEmbedding,
+  logSearchExecution,
+  logSearchResults,
+  logReranking,
+  logIndexStats,
+  logPipelineSummary,
+  type QueryPreprocessLog,
+  type EmbeddingLog,
+  type SearchExecutionLog,
+  type SearchResultItem,
+  type SearchResultsLog,
+  type RerankingLog,
+  type IndexStatsLog,
+  type SearchPipelineSummary,
+} from './debug-logger'

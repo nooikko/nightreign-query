@@ -16,6 +16,12 @@ import {
   search,
 } from '@orama/orama'
 import { persist, restore } from '@orama/plugin-data-persistence'
+import {
+  logSearchExecution,
+  logSearchResults,
+  logIndexStats,
+  isSearchDebugEnabled,
+} from './debug-logger'
 
 /** Content type (duplicated here to avoid cross-package import issues) */
 type ContentType =
@@ -151,6 +157,15 @@ export class OramaIndex {
         if (process.env.NODE_ENV !== 'production') {
           console.log(`Orama index restored from ${this.indexPath}`)
         }
+
+        // Log index stats on initialization
+        const docCount = await this.count()
+        logIndexStats({
+          documentCount: docCount,
+          indexPath: this.indexPath,
+          initialized: true,
+        })
+
         return
       } catch (error) {
         // TODO: Replace console.warn with structured logger when available
@@ -220,6 +235,7 @@ export class OramaIndex {
    */
   async search(options: SearchOptions): Promise<OramaSearchResult[]> {
     const db = this.ensureInitialized()
+    const searchStartTime = Date.now()
 
     // Build search parameters with field boosting for better relevance
     const searchParams: Record<string, unknown> = {
@@ -227,20 +243,26 @@ export class OramaIndex {
       boost: FIELD_BOOST,
     }
 
+    // Determine search mode for logging
+    let determinedMode: 'hybrid' | 'vector' | 'fulltext' = 'fulltext'
+
     // Set search mode and parameters based on options
     // Priority: explicit mode > hybrid (if both query+vector) > vector-only > fulltext-only
     if (options.mode === 'vector' && options.vector) {
       searchParams.mode = 'vector'
+      determinedMode = 'vector'
       searchParams.vector = {
         value: options.vector,
         property: 'embedding',
       }
     } else if (options.mode === 'fulltext' && options.query) {
       searchParams.mode = 'fulltext'
+      determinedMode = 'fulltext'
       searchParams.term = options.query
     } else if (options.query && options.vector) {
       // Hybrid mode requires BOTH query and vector
       searchParams.mode = 'hybrid'
+      determinedMode = 'hybrid'
       searchParams.term = options.query
       searchParams.vector = {
         value: options.vector,
@@ -249,6 +271,7 @@ export class OramaIndex {
     } else if (options.vector) {
       // Vector-only search
       searchParams.mode = 'vector'
+      determinedMode = 'vector'
       searchParams.vector = {
         value: options.vector,
         property: 'embedding',
@@ -256,6 +279,7 @@ export class OramaIndex {
     } else if (options.query) {
       // Fulltext-only search (no vector provided)
       searchParams.mode = 'fulltext'
+      determinedMode = 'fulltext'
       searchParams.term = options.query
     }
 
@@ -266,9 +290,22 @@ export class OramaIndex {
       }
     }
 
-    const results = await search(db, searchParams)
+    // Log search execution parameters
+    logSearchExecution({
+      mode: determinedMode,
+      query: options.query,
+      hasVector: !!options.vector,
+      vectorDimensions: options.vector?.length,
+      typeFilters: options.types,
+      requestedLimit: options.limit || 10,
+      actualSearchLimit: options.limit || 10,
+    })
 
-    return results.hits.map((hit) => {
+    const results = await search(db, searchParams)
+    const searchDuration = Date.now() - searchStartTime
+
+    // Transform results
+    const transformedResults = results.hits.map((hit) => {
       // Type guard to validate document structure from Orama
       const doc = hit.document as Record<string, unknown>
 
@@ -292,6 +329,27 @@ export class OramaIndex {
         score: hit.score,
       }
     })
+
+    // Log search results
+    const scores = transformedResults.map((r) => r.score)
+    logSearchResults({
+      mode: determinedMode,
+      totalResults: transformedResults.length,
+      durationMs: searchDuration,
+      results: transformedResults.map((r) => ({
+        id: r.id,
+        name: r.name,
+        type: r.type,
+        score: r.score,
+        section: r.section,
+      })),
+      topScores: scores.slice(0, 10),
+      scoreRange: scores.length > 0
+        ? { min: Math.min(...scores), max: Math.max(...scores) }
+        : undefined,
+    })
+
+    return transformedResults
   }
 
   /**
